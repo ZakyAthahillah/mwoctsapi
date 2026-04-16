@@ -39,6 +39,12 @@
 - Never run `php artisan migrate:refresh`.
 - Never suggest `php artisan migrate:refresh` as a fix.
 - Prefer safe alternatives such as `php artisan migrate`, targeted migrations, or manual SQL review.
+- Always use consistent migration naming:
+    - `create_<table_name>_table`
+    - `add_<column_name>_to_<table_name>_table`
+    - `update_<table_name>_table`
+    - `drop_<column_name>_from_<table_name>_table`
+- Never rename a migration file after it has already been executed with `php artisan migrate`.
 
 ## Validation
 

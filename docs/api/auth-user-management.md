@@ -26,6 +26,7 @@ Request body:
 {
   "name": "John Doe",
   "email": "john@example.com",
+  "username": "johndoe",
   "password": "secret123",
   "password_confirmation": "secret123"
 }
@@ -40,8 +41,13 @@ Success response:
   "data": {
     "user": {
       "id": "1",
+      "area_id": null,
       "name": "John Doe",
       "email": "john@example.com",
+      "username": "johndoe",
+      "image": null,
+      "status": 1,
+      "is_operator": false,
       "is_admin": false,
       "created_at": "2026-04-15 15:00:00",
       "updated_at": "2026-04-15 15:00:00"
@@ -95,8 +101,13 @@ Success response:
   "data": {
     "user": {
       "id": "1",
+      "area_id": null,
       "name": "John Doe",
       "email": "john@example.com",
+      "username": "johndoe",
+      "image": null,
+      "status": 1,
+      "is_operator": false,
       "is_admin": false,
       "created_at": "2026-04-15 15:00:00",
       "updated_at": "2026-04-15 15:00:00"
@@ -128,17 +139,25 @@ Request body:
 
 ```json
 {
+  "area_id": 1,
   "name": "Jane Doe",
   "email": "jane@example.com",
+  "username": "janedoe",
+  "image": "users/jane.png",
+  "status": 1,
   "password": "newpassword123",
   "password_confirmation": "newpassword123",
+  "is_operator": true,
   "is_admin": true
 }
 ```
 
 Notes:
 
+- `area_id` and `image` may be `null`.
 - `password` is optional.
+- `status` is required.
+- `is_operator` is required.
 - `is_admin` is required.
 
 ### DELETE `/api/users/{id}`

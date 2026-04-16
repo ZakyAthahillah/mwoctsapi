@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject;
@@ -18,9 +19,14 @@ class User extends Authenticatable implements JWTSubject
      * @var array<int, string>
      */
     protected $fillable = [
+        'area_id',
         'name',
         'email',
+        'username',
+        'image',
+        'status',
         'password',
+        'is_operator',
         'is_admin',
     ];
 
@@ -42,10 +48,18 @@ class User extends Authenticatable implements JWTSubject
     protected function casts(): array
     {
         return [
+            'area_id' => 'integer',
             'email_verified_at' => 'datetime',
+            'status' => 'integer',
+            'is_operator' => 'boolean',
             'is_admin' => 'boolean',
             'password' => 'hashed',
         ];
+    }
+
+    public function area(): BelongsTo
+    {
+        return $this->belongsTo(Area::class);
     }
 
     public function getJWTIdentifier(): mixed
@@ -57,6 +71,7 @@ class User extends Authenticatable implements JWTSubject
     {
         return [
             'is_admin' => (bool) $this->is_admin,
+            'is_operator' => (bool) $this->is_operator,
         ];
     }
 }

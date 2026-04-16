@@ -16,6 +16,7 @@ class RegisterRequest extends BaseApiFormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'username' => ['required', 'string', 'max:20', 'alpha_dash', 'unique:users,username'],
             'password' => ['required', 'confirmed', Password::min(8)],
         ];
     }

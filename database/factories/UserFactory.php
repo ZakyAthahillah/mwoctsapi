@@ -25,10 +25,15 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
+            'area_id' => null,
             'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
+            'username' => substr(fake()->unique()->userName(), 0, 20),
+            'image' => null,
+            'status' => 1,
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
+            'is_operator' => false,
             'is_admin' => false,
             'remember_token' => Str::random(10),
         ];
@@ -48,6 +53,13 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'is_admin' => true,
+        ]);
+    }
+
+    public function operator(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_operator' => true,
         ]);
     }
 }

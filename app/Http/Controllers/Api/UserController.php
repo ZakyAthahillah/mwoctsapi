@@ -16,8 +16,13 @@ class UserController extends Controller
         try {
             DB::transaction(function () use ($request, $user) {
                 $payload = [
+                    'area_id' => $request->input('area_id'),
                     'name' => $request->string('name')->toString(),
                     'email' => $request->string('email')->toString(),
+                    'username' => $request->string('username')->toString(),
+                    'image' => $request->input('image'),
+                    'status' => $request->integer('status'),
+                    'is_operator' => $request->boolean('is_operator'),
                     'is_admin' => $request->boolean('is_admin'),
                 ];
 

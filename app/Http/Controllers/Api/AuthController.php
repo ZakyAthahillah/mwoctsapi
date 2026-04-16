@@ -18,9 +18,14 @@ class AuthController extends Controller
         try {
             $user = DB::transaction(function () use ($request) {
                 return User::create([
+                    'area_id' => null,
                     'name' => $request->string('name')->toString(),
                     'email' => $request->string('email')->toString(),
+                    'username' => $request->string('username')->toString(),
+                    'image' => null,
+                    'status' => 1,
                     'password' => $request->string('password')->toString(),
+                    'is_operator' => false,
                     'is_admin' => false,
                 ]);
             });

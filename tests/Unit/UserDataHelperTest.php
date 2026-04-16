@@ -13,9 +13,14 @@ class UserDataHelperTest extends TestCase
     {
         $user = new User;
         $user->forceFill([
+            'area_id' => 3,
             'name' => 'Admin User',
             'email' => 'admin@example.com',
+            'username' => 'adminuser',
+            'image' => 'profiles/admin.png',
+            'status' => 1,
             'password' => 'secret123',
+            'is_operator' => true,
             'is_admin' => true,
         ]);
 
@@ -27,8 +32,13 @@ class UserDataHelperTest extends TestCase
 
         $this->assertSame([
             'id' => '10',
+            'area_id' => '3',
             'name' => 'Admin User',
             'email' => 'admin@example.com',
+            'username' => 'adminuser',
+            'image' => 'profiles/admin.png',
+            'status' => 1,
+            'is_operator' => true,
             'is_admin' => true,
             'created_at' => '2026-04-15 08:30:00',
             'updated_at' => '2026-04-15 09:45:00',
