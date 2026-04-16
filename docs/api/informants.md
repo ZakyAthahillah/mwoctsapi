@@ -33,7 +33,7 @@ Get a single informant detail.
 
 ### POST `/api/informants`
 
-Create a new informant. Admin only.
+Create a new informant.
 
 Request body:
 
@@ -49,11 +49,11 @@ Request body:
 
 ### PUT `/api/informants/{id}`
 
-Update an informant. Admin only.
+Update an informant.
 
 ### DELETE `/api/informants/{id}`
 
-Delete an informant logically by changing `status` to `99`. Admin only.
+Delete an informant logically by changing `status` to `99`.
 
 ## Notes
 

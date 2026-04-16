@@ -3,25 +3,26 @@
 namespace Tests\Feature;
 
 use App\Models\Area;
-use App\Models\Informant;
+use App\Models\Technician;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
-class InformantApiTest extends TestCase
+class TechnicianApiTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_authenticated_user_can_list_informants_with_pagination(): void
+    public function test_authenticated_user_can_list_technicians_with_pagination(): void
     {
         $user = User::factory()->create();
-        Informant::factory()->count(12)->create();
-        Informant::factory()->deletedStatus()->create();
+        Technician::factory()->count(12)->create();
+        Technician::factory()->deletedStatus()->create();
 
         $token = auth('api')->login($user);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
-            ->getJson('/api/informants?per_page=10');
+            ->getJson('/api/technicians?per_page=10');
 
         $response->assertOk()
             ->assertJsonPath('success', true)
@@ -33,74 +34,83 @@ class InformantApiTest extends TestCase
         $this->assertCount(10, $response->json('data'));
     }
 
-    public function test_authenticated_user_can_filter_informants_by_area(): void
+    public function test_authenticated_user_can_filter_technicians_by_area(): void
     {
         $user = User::factory()->create();
         $area = Area::factory()->create();
-        Informant::factory()->forArea($area)->count(2)->create();
-        Informant::factory()->count(3)->create();
+        Technician::factory()->forArea($area)->count(2)->create();
+        Technician::factory()->count(3)->create();
 
         $token = auth('api')->login($user);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
-            ->getJson('/api/informants?area_id='.$area->id);
+            ->getJson('/api/technicians?area_id='.$area->id);
 
         $response->assertOk()
             ->assertJsonPath('meta.total', 2);
     }
 
-    public function test_authenticated_user_can_view_informant_detail(): void
+    public function test_authenticated_user_can_view_technician_detail(): void
     {
         $user = User::factory()->create();
-        $informant = Informant::factory()->create([
-            'code' => 'INF001',
+        $technician = Technician::factory()->create([
+            'code' => 'TCN001',
         ]);
 
         $token = auth('api')->login($user);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
-            ->getJson('/api/informants/'.$informant->id);
+            ->getJson('/api/technicians/'.$technician->id);
 
         $response->assertOk()
             ->assertJsonPath('success', true)
-            ->assertJsonPath('data.code', 'INF001');
+            ->assertJsonPath('data.code', 'TCN001');
     }
 
-    public function test_admin_can_create_informant(): void
+    public function test_admin_can_create_technician(): void
     {
         $admin = User::factory()->admin()->create();
         $area = Area::factory()->create();
+        $divisionId = DB::table('divisions')->insertGetId([
+            'area_id' => $area->id,
+            'code' => 'DIV001',
+            'name' => 'Divisi A',
+            'status' => 1,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
         $token = auth('api')->login($admin);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
-            ->postJson('/api/informants', [
+            ->postJson('/api/technicians', [
                 'area_id' => $area->id,
-                'code' => 'INF001',
-                'name' => 'Pelapor A',
+                'code' => 'TCN001',
+                'name' => 'Teknisi A',
+                'division_id' => $divisionId,
                 'status' => 1,
-                'group_id' => 5,
+                'group_id' => null,
             ]);
 
         $response->assertStatus(201)
             ->assertJsonPath('success', true)
-            ->assertJsonPath('message', 'Informant created successfully')
-            ->assertJsonPath('data.code', 'INF001');
+            ->assertJsonPath('message', 'Technician created successfully')
+            ->assertJsonPath('data.code', 'TCN001');
 
-        $this->assertDatabaseHas('informants', [
-            'code' => 'INF001',
-            'name' => 'Pelapor A',
+        $this->assertDatabaseHas('technicians', [
+            'code' => 'TCN001',
+            'name' => 'Teknisi A',
             'area_id' => $area->id,
-            'group_id' => 5,
+            'division_id' => $divisionId,
         ]);
     }
 
-    public function test_create_informant_returns_validation_error_when_payload_is_invalid(): void
+    public function test_create_technician_returns_validation_error_when_payload_is_invalid(): void
     {
         $admin = User::factory()->admin()->create();
         $token = auth('api')->login($admin);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
-            ->postJson('/api/informants', []);
+            ->postJson('/api/technicians', []);
 
         $response->assertStatus(400)
             ->assertJsonPath('success', false)
@@ -110,61 +120,72 @@ class InformantApiTest extends TestCase
             ]);
     }
 
-    public function test_authenticated_user_can_create_informant(): void
+    public function test_authenticated_user_can_create_technician(): void
     {
         $user = User::factory()->create();
         $token = auth('api')->login($user);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
-            ->postJson('/api/informants', [
+            ->postJson('/api/technicians', [
                 'area_id' => null,
-                'code' => 'INF001',
-                'name' => 'Pelapor A',
+                'code' => 'TCN001',
+                'name' => 'Teknisi A',
+                'division_id' => null,
                 'status' => 1,
                 'group_id' => null,
             ]);
 
         $response->assertStatus(201)
             ->assertJsonPath('success', true)
-            ->assertJsonPath('message', 'Informant created successfully');
+            ->assertJsonPath('message', 'Technician created successfully');
     }
 
-    public function test_admin_can_update_informant(): void
+    public function test_admin_can_update_technician(): void
     {
         $admin = User::factory()->admin()->create();
         $area = Area::factory()->create();
-        $informant = Informant::factory()->create([
-            'code' => 'INF001',
+        $divisionId = DB::table('divisions')->insertGetId([
+            'area_id' => $area->id,
+            'code' => 'DIV001',
+            'name' => 'Divisi A',
+            'status' => 1,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $technician = Technician::factory()->create([
+            'code' => 'TCN001',
         ]);
 
         $token = auth('api')->login($admin);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
-            ->putJson('/api/informants/'.$informant->id, [
+            ->putJson('/api/technicians/'.$technician->id, [
                 'area_id' => $area->id,
-                'code' => 'INF002',
-                'name' => 'Pelapor B',
+                'code' => 'TCN002',
+                'name' => 'Teknisi B',
+                'division_id' => $divisionId,
                 'status' => 1,
-                'group_id' => 9,
+                'group_id' => null,
             ]);
 
         $response->assertOk()
             ->assertJsonPath('success', true)
-            ->assertJsonPath('message', 'Informant updated successfully')
-            ->assertJsonPath('data.code', 'INF002');
+            ->assertJsonPath('message', 'Technician updated successfully')
+            ->assertJsonPath('data.code', 'TCN002');
     }
 
-    public function test_admin_cannot_update_deleted_informant(): void
+    public function test_admin_cannot_update_deleted_technician(): void
     {
         $admin = User::factory()->admin()->create();
-        $informant = Informant::factory()->deletedStatus()->create();
+        $technician = Technician::factory()->deletedStatus()->create();
         $token = auth('api')->login($admin);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
-            ->putJson('/api/informants/'.$informant->id, [
+            ->putJson('/api/technicians/'.$technician->id, [
                 'area_id' => null,
-                'code' => 'INF002',
-                'name' => 'Pelapor B',
+                'code' => 'TCN002',
+                'name' => 'Teknisi B',
+                'division_id' => null,
                 'status' => 1,
                 'group_id' => null,
             ]);
@@ -172,43 +193,43 @@ class InformantApiTest extends TestCase
         $response->assertStatus(400)
             ->assertJsonPath('success', false)
             ->assertJsonPath('message', 'Bad request')
-            ->assertJsonPath('errors.request.0', 'Informant has been deleted and cannot be updated.');
+            ->assertJsonPath('errors.request.0', 'Technician has been deleted and cannot be updated.');
     }
 
-    public function test_admin_can_delete_informant_using_status_flag(): void
+    public function test_admin_can_delete_technician_using_status_flag(): void
     {
         $admin = User::factory()->admin()->create();
-        $informant = Informant::factory()->create([
+        $technician = Technician::factory()->create([
             'status' => 1,
         ]);
         $token = auth('api')->login($admin);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
-            ->deleteJson('/api/informants/'.$informant->id);
+            ->deleteJson('/api/technicians/'.$technician->id);
 
         $response->assertOk()
             ->assertJsonPath('success', true)
-            ->assertJsonPath('message', 'Informant deleted successfully')
+            ->assertJsonPath('message', 'Technician deleted successfully')
             ->assertJsonPath('data.status', 99);
 
-        $this->assertDatabaseHas('informants', [
-            'id' => $informant->id,
+        $this->assertDatabaseHas('technicians', [
+            'id' => $technician->id,
             'status' => 99,
         ]);
     }
 
-    public function test_delete_informant_returns_error_when_informant_already_deleted(): void
+    public function test_delete_technician_returns_error_when_technician_already_deleted(): void
     {
         $admin = User::factory()->admin()->create();
-        $informant = Informant::factory()->deletedStatus()->create();
+        $technician = Technician::factory()->deletedStatus()->create();
         $token = auth('api')->login($admin);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
-            ->deleteJson('/api/informants/'.$informant->id);
+            ->deleteJson('/api/technicians/'.$technician->id);
 
         $response->assertStatus(400)
             ->assertJsonPath('success', false)
             ->assertJsonPath('message', 'Bad request')
-            ->assertJsonPath('errors.request.0', 'Informant has already been deleted.');
+            ->assertJsonPath('errors.request.0', 'Technician has already been deleted.');
     }
 }

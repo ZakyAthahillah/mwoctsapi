@@ -8,6 +8,8 @@
 ## skills and learning
 
 - always make file api documentation at folder docs/api when you create new endpoint api
+- always update `docs/api/all-endpoints.txt` after creating or changing API endpoints so the endpoint list stays complete
+- always include simple usage examples in `docs/api/all-endpoints.txt` for each API endpoint, focusing on headers, query params, and request body examples without requiring response examples
 - always make file learning at folder docs/learning if you have error for documentation bug or debugging
 - always check at folder docs/learning if you struggle after 3 prompts of fixing something. It might be a similiar issue from the past
 

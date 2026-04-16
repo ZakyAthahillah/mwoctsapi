@@ -36,7 +36,7 @@ Get a single machine detail.
 
 ### POST `/api/machines`
 
-Create a new machine. Admin only.
+Create a new machine.
 
 Request body:
 
@@ -54,11 +54,11 @@ Request body:
 
 ### PUT `/api/machines/{id}`
 
-Update a machine. Admin only.
+Update a machine.
 
 ### DELETE `/api/machines/{id}`
 
-Delete a machine logically by changing `status` to `99`. Admin only.
+Delete a machine logically by changing `status` to `99`.
 
 ## Notes
 

@@ -3,25 +3,25 @@
 namespace Tests\Feature;
 
 use App\Models\Area;
-use App\Models\Machine;
+use App\Models\Group;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-class MachineApiTest extends TestCase
+class GroupApiTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_authenticated_user_can_list_machines_with_pagination(): void
+    public function test_authenticated_user_can_list_groups_with_pagination(): void
     {
         $user = User::factory()->create();
-        Machine::factory()->count(12)->create();
-        Machine::factory()->deletedStatus()->create();
+        Group::factory()->count(12)->create();
+        Group::factory()->deletedStatus()->create();
 
         $token = auth('api')->login($user);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
-            ->getJson('/api/machines?per_page=10');
+            ->getJson('/api/groups?per_page=10');
 
         $response->assertOk()
             ->assertJsonPath('success', true)
@@ -33,187 +33,172 @@ class MachineApiTest extends TestCase
         $this->assertCount(10, $response->json('data'));
     }
 
-    public function test_authenticated_user_can_filter_machines_by_area(): void
+    public function test_authenticated_user_can_filter_groups_by_area(): void
     {
         $user = User::factory()->create();
         $area = Area::factory()->create();
-        Machine::factory()->forArea($area)->count(2)->create();
-        Machine::factory()->count(3)->create();
+        Group::factory()->forArea($area)->count(2)->create();
+        Group::factory()->count(3)->create();
 
         $token = auth('api')->login($user);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
-            ->getJson('/api/machines?area_id='.$area->id);
+            ->getJson('/api/groups?area_id='.$area->id);
 
         $response->assertOk()
             ->assertJsonPath('meta.total', 2);
     }
 
-    public function test_authenticated_user_can_view_machine_detail(): void
+    public function test_authenticated_user_can_view_group_detail(): void
     {
         $user = User::factory()->create();
-        $machine = Machine::factory()->create([
-            'code' => 'MCH001',
+        $group = Group::factory()->create([
+            'name' => 'Group Alpha',
         ]);
 
         $token = auth('api')->login($user);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
-            ->getJson('/api/machines/'.$machine->id);
+            ->getJson('/api/groups/'.$group->id);
 
         $response->assertOk()
             ->assertJsonPath('success', true)
-            ->assertJsonPath('data.code', 'MCH001');
+            ->assertJsonPath('data.name', 'Group Alpha');
     }
 
-    public function test_admin_can_create_machine(): void
+    public function test_admin_can_create_group(): void
     {
         $admin = User::factory()->admin()->create();
         $area = Area::factory()->create();
         $token = auth('api')->login($admin);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
-            ->postJson('/api/machines', [
+            ->postJson('/api/groups', [
                 'area_id' => $area->id,
-                'code' => 'MCH001',
-                'name' => 'Mesin Potong',
-                'description' => 'Mesin untuk proses potong',
-                'image' => 'machines/front.png',
-                'image_side' => 'machines/side.png',
+                'name' => 'Group Alpha',
                 'status' => 1,
             ]);
 
         $response->assertStatus(201)
             ->assertJsonPath('success', true)
-            ->assertJsonPath('message', 'Machine created successfully')
-            ->assertJsonPath('data.code', 'MCH001');
+            ->assertJsonPath('message', 'Group created successfully')
+            ->assertJsonPath('data.name', 'Group Alpha');
 
-        $this->assertDatabaseHas('machines', [
-            'code' => 'MCH001',
-            'name' => 'Mesin Potong',
+        $this->assertDatabaseHas('groups', [
+            'name' => 'Group Alpha',
             'area_id' => $area->id,
         ]);
     }
 
-    public function test_create_machine_returns_validation_error_when_payload_is_invalid(): void
+    public function test_create_group_returns_validation_error_when_payload_is_invalid(): void
     {
         $admin = User::factory()->admin()->create();
         $token = auth('api')->login($admin);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
-            ->postJson('/api/machines', []);
+            ->postJson('/api/groups', []);
 
         $response->assertStatus(400)
             ->assertJsonPath('success', false)
             ->assertJsonPath('message', 'Bad request')
             ->assertJsonStructure([
-                'errors' => ['code', 'name', 'status'],
+                'errors' => ['name', 'status'],
             ]);
     }
 
-    public function test_authenticated_user_can_create_machine(): void
+    public function test_authenticated_user_can_create_group(): void
     {
         $user = User::factory()->create();
         $token = auth('api')->login($user);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
-            ->postJson('/api/machines', [
+            ->postJson('/api/groups', [
                 'area_id' => null,
-                'code' => 'MCH001',
-                'name' => 'Mesin Potong',
-                'description' => null,
-                'image' => null,
-                'image_side' => null,
+                'name' => 'Group Alpha',
                 'status' => 1,
             ]);
 
         $response->assertStatus(201)
             ->assertJsonPath('success', true)
-            ->assertJsonPath('message', 'Machine created successfully');
+            ->assertJsonPath('message', 'Group created successfully');
     }
 
-    public function test_admin_can_update_machine(): void
+    public function test_admin_can_update_group(): void
     {
         $admin = User::factory()->admin()->create();
         $area = Area::factory()->create();
-        $machine = Machine::factory()->create([
-            'code' => 'MCH001',
+        $group = Group::factory()->create([
+            'name' => 'Group Alpha',
         ]);
 
         $token = auth('api')->login($admin);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
-            ->putJson('/api/machines/'.$machine->id, [
+            ->putJson('/api/groups/'.$group->id, [
                 'area_id' => $area->id,
-                'code' => 'MCH002',
-                'name' => 'Mesin Press',
-                'description' => 'Mesin press update',
-                'image' => 'machines/front-2.png',
-                'image_side' => 'machines/side-2.png',
+                'name' => 'Group Beta',
                 'status' => 1,
             ]);
 
         $response->assertOk()
             ->assertJsonPath('success', true)
-            ->assertJsonPath('message', 'Machine updated successfully')
-            ->assertJsonPath('data.code', 'MCH002');
+            ->assertJsonPath('message', 'Group updated successfully')
+            ->assertJsonPath('data.name', 'Group Beta');
     }
 
-    public function test_admin_cannot_update_deleted_machine(): void
+    public function test_admin_cannot_update_deleted_group(): void
     {
         $admin = User::factory()->admin()->create();
-        $machine = Machine::factory()->deletedStatus()->create();
+        $group = Group::factory()->deletedStatus()->create();
         $token = auth('api')->login($admin);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
-            ->putJson('/api/machines/'.$machine->id, [
+            ->putJson('/api/groups/'.$group->id, [
                 'area_id' => null,
-                'code' => 'MCH002',
-                'name' => 'Mesin Press',
-                'description' => 'Mesin press update',
-                'image' => null,
-                'image_side' => null,
+                'name' => 'Group Beta',
                 'status' => 1,
             ]);
 
         $response->assertStatus(400)
             ->assertJsonPath('success', false)
             ->assertJsonPath('message', 'Bad request')
-            ->assertJsonPath('errors.request.0', 'Machine has been deleted and cannot be updated.');
+            ->assertJsonPath('errors.request.0', 'Group has been deleted and cannot be updated.');
     }
 
-    public function test_admin_can_delete_machine_using_status_flag(): void
+    public function test_admin_can_delete_group_using_status_flag(): void
     {
         $admin = User::factory()->admin()->create();
-        $machine = Machine::factory()->active()->create();
+        $group = Group::factory()->create([
+            'status' => 1,
+        ]);
         $token = auth('api')->login($admin);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
-            ->deleteJson('/api/machines/'.$machine->id);
+            ->deleteJson('/api/groups/'.$group->id);
 
         $response->assertOk()
             ->assertJsonPath('success', true)
-            ->assertJsonPath('message', 'Machine deleted successfully')
+            ->assertJsonPath('message', 'Group deleted successfully')
             ->assertJsonPath('data.status', 99);
 
-        $this->assertDatabaseHas('machines', [
-            'id' => $machine->id,
+        $this->assertDatabaseHas('groups', [
+            'id' => $group->id,
             'status' => 99,
         ]);
     }
 
-    public function test_delete_machine_returns_error_when_machine_already_deleted(): void
+    public function test_delete_group_returns_error_when_group_already_deleted(): void
     {
         $admin = User::factory()->admin()->create();
-        $machine = Machine::factory()->deletedStatus()->create();
+        $group = Group::factory()->deletedStatus()->create();
         $token = auth('api')->login($admin);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
-            ->deleteJson('/api/machines/'.$machine->id);
+            ->deleteJson('/api/groups/'.$group->id);
 
         $response->assertStatus(400)
             ->assertJsonPath('success', false)
             ->assertJsonPath('message', 'Bad request')
-            ->assertJsonPath('errors.request.0', 'Machine has already been deleted.');
+            ->assertJsonPath('errors.request.0', 'Group has already been deleted.');
     }
 }

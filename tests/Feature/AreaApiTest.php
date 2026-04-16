@@ -89,7 +89,7 @@ class AreaApiTest extends TestCase
             ]);
     }
 
-    public function test_non_admin_cannot_create_area(): void
+    public function test_authenticated_user_can_create_area(): void
     {
         $user = User::factory()->create();
         $token = auth('api')->login($user);
@@ -102,9 +102,9 @@ class AreaApiTest extends TestCase
                 'status' => 1,
             ]);
 
-        $response->assertStatus(403)
-            ->assertJsonPath('success', false)
-            ->assertJsonPath('message', 'Forbidden');
+        $response->assertStatus(201)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('message', 'Area created successfully');
     }
 
     public function test_admin_can_update_area(): void

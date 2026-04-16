@@ -1,0 +1,390 @@
+MWOCTS API Endpoint List
+========================
+
+Base route: /api
+
+Authentication
+--------------
+POST   /api/register
+POST   /api/login
+POST   /api/refresh
+POST   /api/logout
+
+Areas
+-----
+GET    /api/areas
+POST   /api/areas
+GET    /api/areas/{area}
+PUT    /api/areas/{area}
+DELETE /api/areas/{area}
+
+Groups
+------
+GET    /api/groups
+POST   /api/groups
+GET    /api/groups/{group}
+PUT    /api/groups/{group}
+DELETE /api/groups/{group}
+
+Informants
+----------
+GET    /api/informants
+POST   /api/informants
+GET    /api/informants/{informant}
+PUT    /api/informants/{informant}
+DELETE /api/informants/{informant}
+
+Machines
+--------
+GET    /api/machines
+POST   /api/machines
+GET    /api/machines/{machine}
+PUT    /api/machines/{machine}
+DELETE /api/machines/{machine}
+
+Operations
+----------
+GET    /api/operations
+POST   /api/operations
+GET    /api/operations/{operation}
+PUT    /api/operations/{operation}
+DELETE /api/operations/{operation}
+
+Parts
+-----
+GET    /api/parts
+POST   /api/parts
+GET    /api/parts/{part}
+PUT    /api/parts/{part}
+DELETE /api/parts/{part}
+
+Reasons
+-------
+GET    /api/reasons
+POST   /api/reasons
+GET    /api/reasons/{reason}
+PUT    /api/reasons/{reason}
+DELETE /api/reasons/{reason}
+
+Technicians
+-----------
+GET    /api/technicians
+POST   /api/technicians
+GET    /api/technicians/{technician}
+PUT    /api/technicians/{technician}
+DELETE /api/technicians/{technician}
+
+Users
+-----
+PUT    /api/users/{user}
+DELETE /api/users/{user}
+
+Access Notes
+------------
+- Public without token:
+  POST /api/register
+  POST /api/login
+  POST /api/refresh
+
+- Require JWT token:
+  POST /api/logout
+  All area endpoints
+  All group endpoints
+  All informant endpoints
+  All machine endpoints
+  All operation endpoints
+  All part endpoints
+  All reason endpoints
+  All technician endpoints
+
+- Require JWT token and admin middleware:
+  PUT /api/users/{user}
+  DELETE /api/users/{user}
+
+Documentation Files
+-------------------
+- docs/api/auth-user-management.md
+- docs/api/areas.md
+- docs/api/groups.md
+- docs/api/informants.md
+- docs/api/machines.md
+- docs/api/operations.md
+- docs/api/parts.md
+- docs/api/reasons.md
+- docs/api/technicians.md
+
+Usage Examples
+--------------
+
+Common Headers
+--------------
+Use these headers for authenticated endpoints:
+
+Authorization: Bearer <your_jwt_token>
+Accept: application/json
+Content-Type: application/json
+
+Authentication Examples
+-----------------------
+Register
+POST /api/register
+{
+  "name": "Admin User",
+  "email": "admin@example.com",
+  "username": "adminuser",
+  "password": "password",
+  "password_confirmation": "password"
+}
+
+Login
+POST /api/login
+{
+  "login": "admin@example.com",
+  "password": "password"
+}
+
+Refresh Token
+POST /api/refresh
+
+Logout
+POST /api/logout
+
+Areas Examples
+--------------
+List areas
+GET /api/areas?per_page=10&search=jakarta
+
+Create area
+POST /api/areas
+{
+  "code": "AREA01",
+  "name": "Jakarta Barat",
+  "object_name": "Objek Area",
+  "status": 1
+}
+
+Update area
+PUT /api/areas/{area}
+{
+  "code": "AREA01",
+  "name": "Jakarta Barat Update",
+  "object_name": "Objek Area Update",
+  "status": 1
+}
+
+Delete area
+DELETE /api/areas/{area}
+
+Groups Examples
+---------------
+List groups
+GET /api/groups?per_page=10&search=group&area_id=1
+
+Create group
+POST /api/groups
+{
+  "area_id": 1,
+  "name": "Group A",
+  "status": 1
+}
+
+Update group
+PUT /api/groups/{group}
+{
+  "area_id": 1,
+  "name": "Group A Update",
+  "status": 1
+}
+
+Delete group
+DELETE /api/groups/{group}
+
+Informants Examples
+-------------------
+List informants
+GET /api/informants?per_page=10&search=pelapor&area_id=1&group_id=1
+
+Create informant
+POST /api/informants
+{
+  "area_id": 1,
+  "code": "INF001",
+  "name": "Pelapor A",
+  "status": 1,
+  "group_id": 1
+}
+
+Update informant
+PUT /api/informants/{informant}
+{
+  "area_id": 1,
+  "code": "INF001",
+  "name": "Pelapor A Update",
+  "status": 1,
+  "group_id": 1
+}
+
+Delete informant
+DELETE /api/informants/{informant}
+
+Machines Examples
+-----------------
+List machines
+GET /api/machines?per_page=10&search=mesin&area_id=1
+
+Create machine
+POST /api/machines
+{
+  "area_id": 1,
+  "code": "MCH001",
+  "name": "Mesin Potong",
+  "description": "Mesin untuk proses potong",
+  "image": "machines/front.png",
+  "image_side": "machines/side.png",
+  "status": 1
+}
+
+Update machine
+PUT /api/machines/{machine}
+{
+  "area_id": 1,
+  "code": "MCH001",
+  "name": "Mesin Potong Update",
+  "description": "Mesin update",
+  "image": "machines/front.png",
+  "image_side": "machines/side.png",
+  "status": 1
+}
+
+Delete machine
+DELETE /api/machines/{machine}
+
+Operations Examples
+-------------------
+List operations
+GET /api/operations?per_page=10&search=kerja&area_id=1
+
+Create operation
+POST /api/operations
+{
+  "area_id": 1,
+  "code": "OPR001",
+  "name": "Pekerjaan A",
+  "status": 1
+}
+
+Update operation
+PUT /api/operations/{operation}
+{
+  "area_id": 1,
+  "code": "OPR001",
+  "name": "Pekerjaan A Update",
+  "status": 1
+}
+
+Delete operation
+DELETE /api/operations/{operation}
+
+Parts Examples
+--------------
+List parts
+GET /api/parts?per_page=10&search=part&area_id=1
+
+Create part
+POST /api/parts
+{
+  "area_id": 1,
+  "code": "PRT001",
+  "name": "Part A",
+  "description": "Deskripsi part",
+  "status": 1
+}
+
+Update part
+PUT /api/parts/{part}
+{
+  "area_id": 1,
+  "code": "PRT001",
+  "name": "Part A Update",
+  "description": "Deskripsi part update",
+  "status": 1
+}
+
+Delete part
+DELETE /api/parts/{part}
+
+Reasons Examples
+----------------
+List reasons
+GET /api/reasons?per_page=10&search=alasan&area_id=1&division_id=1
+
+Create reason
+POST /api/reasons
+{
+  "area_id": 1,
+  "code": "RSN001",
+  "name": "Alasan A",
+  "division_id": 1,
+  "status": 1
+}
+
+Update reason
+PUT /api/reasons/{reason}
+{
+  "area_id": 1,
+  "code": "RSN001",
+  "name": "Alasan A Update",
+  "division_id": 1,
+  "status": 1
+}
+
+Delete reason
+DELETE /api/reasons/{reason}
+
+Technicians Examples
+--------------------
+List technicians
+GET /api/technicians?per_page=10&search=teknisi&area_id=1&division_id=1&group_id=1
+
+Create technician
+POST /api/technicians
+{
+  "area_id": 1,
+  "code": "TCN001",
+  "name": "Teknisi A",
+  "division_id": 1,
+  "status": 1,
+  "group_id": 1
+}
+
+Update technician
+PUT /api/technicians/{technician}
+{
+  "area_id": 1,
+  "code": "TCN001",
+  "name": "Teknisi A Update",
+  "division_id": 1,
+  "status": 1,
+  "group_id": 1
+}
+
+Delete technician
+DELETE /api/technicians/{technician}
+
+Users Examples
+--------------
+Update user
+PUT /api/users/{user}
+{
+  "area_id": 1,
+  "name": "Updated User",
+  "email": "updated@example.com",
+  "username": "updateduser",
+  "image": null,
+  "status": 1,
+  "is_operator": 0,
+  "is_admin": 0
+}
+
+Delete user
+DELETE /api/users/{user}

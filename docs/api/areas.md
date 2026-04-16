@@ -58,7 +58,7 @@ Get a single area detail.
 
 ### POST `/api/areas`
 
-Create a new area. Admin only.
+Create a new area.
 
 Request body:
 
@@ -73,7 +73,7 @@ Request body:
 
 ### PUT `/api/areas/{id}`
 
-Update an area. Admin only.
+Update an area.
 
 Request body:
 
@@ -88,7 +88,7 @@ Request body:
 
 ### DELETE `/api/areas/{id}`
 
-Delete an area logically by changing `status` to `99`. Admin only.
+Delete an area logically by changing `status` to `99`.
 
 ## Notes
 
