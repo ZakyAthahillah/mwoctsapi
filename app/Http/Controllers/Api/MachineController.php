@@ -22,6 +22,7 @@ class MachineController extends Controller
             $areaId = $request->query('area_id');
 
             $machinesQuery = Machine::query()
+                ->with('area')
                 ->where('status', '<>', 99)
                 ->when($areaId !== null && $areaId !== '', fn ($query) => $query->where('area_id', $areaId))
                 ->when($search !== '', function ($query) use ($search) {
@@ -63,6 +64,8 @@ class MachineController extends Controller
                 ]);
             });
 
+            $machine->load('area');
+
             return ApiResponseHelper::success('Machine created successfully', MachineDataHelper::transform($machine), null, 201);
         } catch (\Throwable $exception) {
             return ApiResponseHelper::error('Failed to create machine');
@@ -75,6 +78,8 @@ class MachineController extends Controller
             if ((int) $machine->status === 99) {
                 return ApiResponseHelper::error('Resource not found', null, 404);
             }
+
+            $machine->load('area');
 
             return ApiResponseHelper::success('Data retrieved successfully', MachineDataHelper::transform($machine));
         } catch (\Throwable $exception) {
@@ -103,7 +108,7 @@ class MachineController extends Controller
                 ]);
             });
 
-            $machine->refresh();
+            $machine->refresh()->load('area');
 
             return ApiResponseHelper::success('Machine updated successfully', MachineDataHelper::transform($machine));
         } catch (\Throwable $exception) {
@@ -123,6 +128,8 @@ class MachineController extends Controller
             $machine->update([
                 'status' => 99,
             ]);
+
+            $machine->refresh()->load('area');
 
             return ApiResponseHelper::success('Machine deleted successfully', MachineDataHelper::transform($machine));
         } catch (\Throwable $exception) {

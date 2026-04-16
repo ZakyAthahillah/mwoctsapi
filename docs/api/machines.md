@@ -16,7 +16,7 @@ Content-Type: application/json
 
 ## Route Location
 
-Machine API routes are defined in `routes/web.php` using an `/api` prefix, based on the project requirement.
+Machine API routes are defined in `routes/api.php`.
 
 ## Endpoints
 
