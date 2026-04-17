@@ -29,9 +29,48 @@ class StoreMachineRequest extends BaseApiFormRequest
             ],
             'name' => ['required', 'string', 'max:100'],
             'description' => ['present', 'nullable', 'string'],
-            'image' => ['present', 'nullable', 'string', 'max:255'],
-            'image_side' => ['present', 'nullable', 'string', 'max:255'],
+            'image' => ['present', 'nullable', function (string $attribute, mixed $value, \Closure $fail) {
+                $this->validateImageInput($attribute, $value, $fail);
+            }],
+            'image_side' => ['present', 'nullable', function (string $attribute, mixed $value, \Closure $fail) {
+                $this->validateImageInput($attribute, $value, $fail);
+            }],
             'status' => ['required', 'integer', 'between:0,99'],
         ];
+    }
+
+    private function validateImageInput(string $attribute, mixed $value, \Closure $fail): void
+    {
+        if ($value === null || $value === '') {
+            return;
+        }
+
+        if (is_string($value)) {
+            if (mb_strlen($value) > 255) {
+                $fail("The {$attribute} field must not be greater than 255 characters.");
+            }
+
+            return;
+        }
+
+        if (is_object($value) && method_exists($value, 'isValid')) {
+            if (! $value->isValid()) {
+                $fail("The {$attribute} upload is invalid.");
+            }
+
+            $mimeType = (string) $value->getMimeType();
+            if (! str_starts_with($mimeType, 'image/')) {
+                $fail("The {$attribute} field must be an image.");
+            }
+
+            $maxBytes = 5 * 1024 * 1024;
+            if ((int) $value->getSize() > $maxBytes) {
+                $fail("The {$attribute} field must not be greater than 5120 kilobytes.");
+            }
+
+            return;
+        }
+
+        $fail("The {$attribute} field format is invalid.");
     }
 }

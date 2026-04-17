@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Helpers\ApiResponseHelper;
 use App\Helpers\MachineDataHelper;
+use App\Helpers\MachineImageHelper;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreMachineRequest;
 use App\Http\Requests\Api\UpdateMachineRequest;
@@ -58,11 +59,17 @@ class MachineController extends Controller
                     'code' => $request->string('code')->toString(),
                     'name' => $request->string('name')->toString(),
                     'description' => $request->input('description'),
-                    'image' => $request->input('image'),
-                    'image_side' => $request->input('image_side'),
+                    'image' => null,
+                    'image_side' => null,
                     'status' => $request->integer('status'),
                 ]);
             });
+
+            $imagePayload = MachineImageHelper::resolveImageUrls($request, $machine);
+
+            if ($imagePayload !== []) {
+                $machine->update($imagePayload);
+            }
 
             $machine->load('area');
 

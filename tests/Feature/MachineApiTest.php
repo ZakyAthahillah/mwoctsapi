@@ -6,11 +6,20 @@ use App\Models\Area;
 use App\Models\Machine;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 class MachineApiTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function tearDown(): void
+    {
+        File::deleteDirectory(public_path('images/machines'));
+
+        parent::tearDown();
+    }
 
     public function test_authenticated_user_can_list_machines_with_pagination(): void
     {
@@ -100,10 +109,17 @@ class MachineApiTest extends TestCase
             ->assertJsonPath('message', 'Machine created successfully')
             ->assertJsonPath('data.code', 'MCH001');
 
+        $machineId = $response->json('data.id');
+
+        $response->assertJsonPath('data.image', 'images/machines/'.$machineId.'/front.png')
+            ->assertJsonPath('data.image_side', 'images/machines/'.$machineId.'/side.png');
+
         $this->assertDatabaseHas('machines', [
             'code' => 'MCH001',
             'name' => 'Mesin Potong',
             'area_id' => $area->id,
+            'image' => 'images/machines/'.$machineId.'/front.png',
+            'image_side' => 'images/machines/'.$machineId.'/side.png',
         ]);
     }
 
@@ -142,6 +158,41 @@ class MachineApiTest extends TestCase
         $response->assertStatus(201)
             ->assertJsonPath('success', true)
             ->assertJsonPath('message', 'Machine created successfully');
+    }
+
+    public function test_authenticated_user_can_create_machine_with_uploaded_images(): void
+    {
+        $user = User::factory()->create();
+        $area = Area::factory()->create();
+        $token = auth('api')->login($user);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->post('/api/machines', [
+                'area_id' => $area->id,
+                'code' => 'MCH-UPLOAD',
+                'name' => 'Mesin Upload',
+                'description' => 'Mesin dengan upload gambar',
+                'image' => UploadedFile::fake()->image('front.jpg'),
+                'image_side' => UploadedFile::fake()->image('side.jpg'),
+                'status' => 1,
+            ], [
+                'Accept' => 'application/json',
+            ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.code', 'MCH-UPLOAD');
+
+        $machineId = $response->json('data.id');
+        $imagePath = $response->json('data.image');
+        $imageSidePath = $response->json('data.image_side');
+
+        $this->assertNotNull($imagePath);
+        $this->assertNotNull($imageSidePath);
+        $this->assertStringContainsString('images/machines/'.$machineId.'/', $imagePath);
+        $this->assertStringContainsString('images/machines/'.$machineId.'/', $imageSidePath);
+        $this->assertFileExists(public_path((string) $imagePath));
+        $this->assertFileExists(public_path((string) $imageSidePath));
     }
 
     public function test_admin_can_update_machine(): void
