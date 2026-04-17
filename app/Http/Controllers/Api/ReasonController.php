@@ -23,7 +23,7 @@ class ReasonController extends Controller
             $divisionId = $request->query('division_id');
 
             $reasonsQuery = Reason::query()
-                ->with('area')
+                ->with(['area', 'division'])
                 ->where('status', '<>', 99)
                 ->when($areaId !== null && $areaId !== '', fn ($query) => $query->where('area_id', $areaId))
                 ->when($divisionId !== null && $divisionId !== '', fn ($query) => $query->where('division_id', $divisionId))
@@ -63,7 +63,7 @@ class ReasonController extends Controller
                 ]);
             });
 
-            $reason->load('area');
+            $reason->load(['area', 'division']);
 
             return ApiResponseHelper::success('Reason created successfully', ReasonDataHelper::transform($reason), null, 201);
         } catch (\Throwable $exception) {
@@ -78,7 +78,7 @@ class ReasonController extends Controller
                 return ApiResponseHelper::error('Resource not found', null, 404);
             }
 
-            $reason->load('area');
+            $reason->load(['area', 'division']);
 
             return ApiResponseHelper::success('Data retrieved successfully', ReasonDataHelper::transform($reason));
         } catch (\Throwable $exception) {
@@ -105,7 +105,7 @@ class ReasonController extends Controller
                 ]);
             });
 
-            $reason->refresh()->load('area');
+            $reason->refresh()->load(['area', 'division']);
 
             return ApiResponseHelper::success('Reason updated successfully', ReasonDataHelper::transform($reason));
         } catch (\Throwable $exception) {
@@ -126,7 +126,7 @@ class ReasonController extends Controller
                 'status' => 99,
             ]);
 
-            $reason->refresh()->load('area');
+            $reason->refresh()->load(['area', 'division']);
 
             return ApiResponseHelper::success('Reason deleted successfully', ReasonDataHelper::transform($reason));
         } catch (\Throwable $exception) {

@@ -63,7 +63,8 @@ class DivisionApiTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('success', true)
-            ->assertJsonPath('data.code', 'DIV001');
+            ->assertJsonPath('data.code', 'DIV001')
+            ->assertJsonPath('data.area_name', $division->area?->name);
     }
 
     public function test_authenticated_user_can_create_division(): void

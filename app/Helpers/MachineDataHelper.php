@@ -11,6 +11,7 @@ class MachineDataHelper
         return [
             'id' => (string) $machine->id,
             'area_id' => $machine->area_id !== null ? (string) $machine->area_id : null,
+            'area_name' => $machine->area?->name,
             'code' => $machine->code,
             'name' => $machine->name,
             'description' => $machine->description,

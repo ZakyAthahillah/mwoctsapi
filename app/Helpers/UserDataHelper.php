@@ -11,6 +11,7 @@ class UserDataHelper
         return [
             'id' => (string) $user->id,
             'area_id' => $user->area_id !== null ? (string) $user->area_id : null,
+            'area_name' => $user->area?->name,
             'name' => $user->name,
             'email' => $user->email,
             'username' => $user->username,

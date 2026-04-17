@@ -23,6 +23,7 @@ class InformantController extends Controller
             $groupId = $request->query('group_id');
 
             $informantsQuery = Informant::query()
+                ->with(['area', 'group'])
                 ->where('status', '<>', 99)
                 ->when($areaId !== null && $areaId !== '', fn ($query) => $query->where('area_id', $areaId))
                 ->when($groupId !== null && $groupId !== '', fn ($query) => $query->where('group_id', $groupId))
@@ -62,6 +63,8 @@ class InformantController extends Controller
                 ]);
             });
 
+            $informant->load(['area', 'group']);
+
             return ApiResponseHelper::success('Informant created successfully', InformantDataHelper::transform($informant), null, 201);
         } catch (\Throwable $exception) {
             return ApiResponseHelper::error('Failed to create informant');
@@ -74,6 +77,8 @@ class InformantController extends Controller
             if ((int) $informant->status === 99) {
                 return ApiResponseHelper::error('Resource not found', null, 404);
             }
+
+            $informant->load(['area', 'group']);
 
             return ApiResponseHelper::success('Data retrieved successfully', InformantDataHelper::transform($informant));
         } catch (\Throwable $exception) {
@@ -100,7 +105,7 @@ class InformantController extends Controller
                 ]);
             });
 
-            $informant->refresh();
+            $informant->refresh()->load(['area', 'group']);
 
             return ApiResponseHelper::success('Informant updated successfully', InformantDataHelper::transform($informant));
         } catch (\Throwable $exception) {
@@ -120,6 +125,8 @@ class InformantController extends Controller
             $informant->update([
                 'status' => 99,
             ]);
+
+            $informant->refresh()->load(['area', 'group']);
 
             return ApiResponseHelper::success('Informant deleted successfully', InformantDataHelper::transform($informant));
         } catch (\Throwable $exception) {

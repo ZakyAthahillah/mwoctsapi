@@ -10,6 +10,19 @@ POST   /api/login
 POST   /api/refresh
 POST   /api/logout
 GET    /api/me
+GET    /api/dashboard
+
+Downtimes
+---------
+GET    /api/downtimes
+
+FBDTs
+-----
+GET    /api/fbdts
+GET    /api/fbdts/check
+GET    /api/fbdts/{year}
+POST   /api/fbdts
+PUT    /api/fbdts/{year}
 
 Areas
 -----
@@ -123,6 +136,9 @@ Access Notes
 - Require JWT token:
   POST /api/logout
   GET /api/me
+  GET /api/dashboard
+  All downtime endpoints
+  All FBDT endpoints
   All area endpoints
   All division endpoints
   All group endpoints
@@ -143,6 +159,9 @@ Access Notes
 Documentation Files
 -------------------
 - docs/api/auth-user-management.md
+- docs/api/dashboard.md
+- docs/api/downtimes.md
+- docs/api/fbdts.md
 - docs/api/areas.md
 - docs/api/divisions.md
 - docs/api/groups.md
@@ -215,6 +234,9 @@ POST /api/login
 Get authenticated user profile
 GET /api/me
 
+Get dashboard summary
+GET /api/dashboard
+
 Refresh Token
 POST /api/refresh
 
@@ -272,6 +294,60 @@ PUT /api/divisions/{division}
 
 Delete division
 DELETE /api/divisions/{division}
+
+Downtimes Examples
+------------------
+List downtimes
+GET /api/downtimes?per_page=10&area_id=1&period_start=2026-04-01&period_end=2026-04-30&machine_id=1&technician_id=1
+
+FBDTs Examples
+--------------
+List FBDT years
+GET /api/fbdts?per_page=10&area_id=1
+
+Check FBDT year
+GET /api/fbdts/check?area_id=1&year=2026
+
+Get FBDT detail
+GET /api/fbdts/2026?area_id=1
+
+Create FBDT
+POST /api/fbdts
+{
+  "area_id": 1,
+  "year": 2026,
+  "targets": [
+    {
+      "month": 1,
+      "fb": 10,
+      "dt": 20,
+      "mtbf": 30,
+      "mttr": 40
+    },
+    {
+      "month": 2,
+      "fb": 11,
+      "dt": 21,
+      "mtbf": 31,
+      "mttr": 41
+    }
+  ]
+}
+
+Update FBDT
+PUT /api/fbdts/2026
+{
+  "area_id": 1,
+  "targets": [
+    {
+      "month": 1,
+      "fb": 15,
+      "dt": 25,
+      "mtbf": 35,
+      "mttr": 45
+    }
+  ]
+}
 
 Groups Examples
 ---------------

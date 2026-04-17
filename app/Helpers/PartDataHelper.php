@@ -11,6 +11,7 @@ class PartDataHelper
         return [
             'id' => (string) $part->id,
             'area_id' => $part->area_id !== null ? (string) $part->area_id : null,
+            'area_name' => $part->area?->name,
             'code' => $part->code,
             'name' => $part->name,
             'description' => $part->description,

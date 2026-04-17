@@ -53,8 +53,21 @@ class ReasonApiTest extends TestCase
     public function test_authenticated_user_can_view_reason_detail(): void
     {
         $user = User::factory()->create();
+        $area = Area::factory()->create([
+            'name' => 'Area Alasan',
+        ]);
+        $divisionId = DB::table('divisions')->insertGetId([
+            'area_id' => $area->id,
+            'code' => 'DIV777',
+            'name' => 'Divisi Alasan',
+            'status' => 1,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
         $reason = Reason::factory()->create([
+            'area_id' => $area->id,
             'code' => 'RSN001',
+            'division_id' => $divisionId,
         ]);
 
         $token = auth('api')->login($user);
@@ -64,7 +77,9 @@ class ReasonApiTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('success', true)
-            ->assertJsonPath('data.code', 'RSN001');
+            ->assertJsonPath('data.code', 'RSN001')
+            ->assertJsonPath('data.area_name', 'Area Alasan')
+            ->assertJsonPath('data.division_name', 'Divisi Alasan');
     }
 
     public function test_authenticated_user_can_create_reason(): void

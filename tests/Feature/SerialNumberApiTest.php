@@ -73,7 +73,9 @@ class SerialNumberApiTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('success', true)
-            ->assertJsonPath('data.id', (string) $serialNumber->id);
+            ->assertJsonPath('data.id', (string) $serialNumber->id)
+            ->assertJsonPath('data.area_name', $serialNumber->area?->name)
+            ->assertJsonPath('data.part_serial_number_name', $serialNumber->partSerialNumber?->serial_number);
     }
 
     public function test_authenticated_user_can_create_serial_number(): void
@@ -248,7 +250,10 @@ class SerialNumberApiTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('success', true)
             ->assertJsonPath('data.part_serial_number_id', (string) $partSerialNumber->id)
-            ->assertJsonPath('data.first_assignment.machine_id', (string) $machine->id);
+            ->assertJsonPath('data.part_serial_number_name', $partSerialNumber->serial_number)
+            ->assertJsonPath('data.area_name', $area->name)
+            ->assertJsonPath('data.first_assignment.machine_id', (string) $machine->id)
+            ->assertJsonPath('data.first_assignment.updated_by_name', $user->name);
     }
 
     public function test_authenticated_user_can_update_first_serial_number_assignment(): void

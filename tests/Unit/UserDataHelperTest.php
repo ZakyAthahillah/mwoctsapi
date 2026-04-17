@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use App\Helpers\UserDataHelper;
+use App\Models\Area;
 use App\Models\User;
 use Carbon\Carbon;
 use Tests\TestCase;
@@ -27,12 +28,17 @@ class UserDataHelperTest extends TestCase
         $user->id = 10;
         $user->created_at = Carbon::parse('2026-04-15 08:30:00');
         $user->updated_at = Carbon::parse('2026-04-15 09:45:00');
+        $user->setRelation('area', tap(new Area, function (Area $area): void {
+            $area->id = 3;
+            $area->name = 'Area Testing';
+        }));
 
         $payload = UserDataHelper::transform($user);
 
         $this->assertSame([
             'id' => '10',
             'area_id' => '3',
+            'area_name' => 'Area Testing',
             'name' => 'Admin User',
             'email' => 'admin@example.com',
             'username' => 'adminuser',

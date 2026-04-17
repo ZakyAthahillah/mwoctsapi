@@ -24,7 +24,7 @@ class TechnicianController extends Controller
             $groupId = $request->query('group_id');
 
             $techniciansQuery = Technician::query()
-                ->with('area')
+                ->with(['area', 'division', 'group'])
                 ->where('status', '<>', 99)
                 ->when($areaId !== null && $areaId !== '', fn ($query) => $query->where('area_id', $areaId))
                 ->when($divisionId !== null && $divisionId !== '', fn ($query) => $query->where('division_id', $divisionId))
@@ -66,7 +66,7 @@ class TechnicianController extends Controller
                 ]);
             });
 
-            $technician->load('area');
+            $technician->load(['area', 'division', 'group']);
 
             return ApiResponseHelper::success('Technician created successfully', TechnicianDataHelper::transform($technician), null, 201);
         } catch (\Throwable $exception) {
@@ -81,7 +81,7 @@ class TechnicianController extends Controller
                 return ApiResponseHelper::error('Resource not found', null, 404);
             }
 
-            $technician->load('area');
+            $technician->load(['area', 'division', 'group']);
 
             return ApiResponseHelper::success('Data retrieved successfully', TechnicianDataHelper::transform($technician));
         } catch (\Throwable $exception) {
@@ -109,7 +109,7 @@ class TechnicianController extends Controller
                 ]);
             });
 
-            $technician->refresh()->load('area');
+            $technician->refresh()->load(['area', 'division', 'group']);
 
             return ApiResponseHelper::success('Technician updated successfully', TechnicianDataHelper::transform($technician));
         } catch (\Throwable $exception) {
@@ -130,7 +130,7 @@ class TechnicianController extends Controller
                 'status' => 99,
             ]);
 
-            $technician->refresh()->load('area');
+            $technician->refresh()->load(['area', 'division', 'group']);
 
             return ApiResponseHelper::success('Technician deleted successfully', TechnicianDataHelper::transform($technician));
         } catch (\Throwable $exception) {

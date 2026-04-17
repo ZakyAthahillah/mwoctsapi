@@ -11,6 +11,7 @@ class DivisionDataHelper
         return [
             'id' => (string) $division->id,
             'area_id' => $division->area_id !== null ? (string) $division->area_id : null,
+            'area_name' => $division->area?->name,
             'code' => $division->code,
             'name' => $division->name,
             'status' => (int) $division->status,

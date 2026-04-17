@@ -13,6 +13,7 @@ class SerialNumberDataHelper
         return [
             'id' => (string) $serialNumber->id,
             'area_id' => $serialNumber->area_id !== null ? (string) $serialNumber->area_id : null,
+            'area_name' => $serialNumber->area?->name,
             'machine_id' => $serialNumber->machine_id !== null ? (string) $serialNumber->machine_id : null,
             'machine_name' => $serialNumber->machine?->name,
             'position_id' => $serialNumber->position_id !== null ? (string) $serialNumber->position_id : null,
@@ -20,6 +21,7 @@ class SerialNumberDataHelper
             'part_id' => $serialNumber->part_id !== null ? (string) $serialNumber->part_id : null,
             'part_name' => $serialNumber->part?->name,
             'part_serial_number_id' => $serialNumber->part_serial_number_id !== null ? (string) $serialNumber->part_serial_number_id : null,
+            'part_serial_number_name' => $serialNumber->partSerialNumber?->serial_number,
             'serial_number' => $serialNumber->partSerialNumber?->serial_number,
         ];
     }
@@ -28,7 +30,9 @@ class SerialNumberDataHelper
     {
         return [
             'part_serial_number_id' => (string) $partSerialNumber->id,
+            'part_serial_number_name' => $partSerialNumber->serial_number,
             'area_id' => $partSerialNumber->area_id !== null ? (string) $partSerialNumber->area_id : null,
+            'area_name' => $partSerialNumber->area?->name,
             'part_id' => $partSerialNumber->part_id !== null ? (string) $partSerialNumber->part_id : null,
             'part_name' => $partSerialNumber->part?->name,
             'serial_number' => $partSerialNumber->serial_number,
@@ -41,6 +45,7 @@ class SerialNumberDataHelper
                 'position_name' => $log->position?->name,
                 'action' => (int) $log->action,
                 'updated_by' => $log->updatedBy !== null ? (string) $log->updatedBy : null,
+                'updated_by_name' => $log->updatedByUser?->name,
                 'updated_at' => optional($log->updatedDate)?->format('Y-m-d H:i:s'),
             ] : null,
         ];

@@ -15,7 +15,13 @@ class MachineApiTest extends TestCase
     public function test_authenticated_user_can_list_machines_with_pagination(): void
     {
         $user = User::factory()->create();
-        Machine::factory()->count(12)->create();
+        $area = Area::factory()->create([
+            'name' => 'Area Produksi',
+        ]);
+        Machine::factory()->count(11)->create();
+        Machine::factory()->forArea($area)->create([
+            'code' => 'MCH-AREA',
+        ]);
         Machine::factory()->deletedStatus()->create();
 
         $token = auth('api')->login($user);
@@ -31,6 +37,7 @@ class MachineApiTest extends TestCase
             ->assertJsonPath('meta.total', 12);
 
         $this->assertCount(10, $response->json('data'));
+        $this->assertTrue(collect($response->json('data'))->contains(fn (array $item) => $item['code'] === 'MCH-AREA' && $item['area_name'] === 'Area Produksi'));
     }
 
     public function test_authenticated_user_can_filter_machines_by_area(): void
@@ -52,7 +59,11 @@ class MachineApiTest extends TestCase
     public function test_authenticated_user_can_view_machine_detail(): void
     {
         $user = User::factory()->create();
+        $area = Area::factory()->create([
+            'name' => 'Area Utility',
+        ]);
         $machine = Machine::factory()->create([
+            'area_id' => $area->id,
             'code' => 'MCH001',
         ]);
 
@@ -63,7 +74,8 @@ class MachineApiTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('success', true)
-            ->assertJsonPath('data.code', 'MCH001');
+            ->assertJsonPath('data.code', 'MCH001')
+            ->assertJsonPath('data.area_name', 'Area Utility');
     }
 
     public function test_admin_can_create_machine(): void

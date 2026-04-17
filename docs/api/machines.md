@@ -64,5 +64,6 @@ Delete a machine logically by changing `status` to `99`.
 
 - Active machine queries exclude records with `status = 99`.
 - `area_id`, `description`, `image`, and `image_side` may be `null`.
+- Machine responses include `area_name` when the related area exists.
 - Validation is required for create and update requests.
 - Forbidden requests return the standard API error format.

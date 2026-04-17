@@ -6,31 +6,34 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class Informant extends Model
+class Fbdt extends Model
 {
     use HasFactory;
 
+    public $timestamps = false;
+
     protected $fillable = [
         'area_id',
-        'code',
-        'name',
-        'status',
-        'group_id',
+        'tahun',
+        'bulan',
+        'fb',
+        'dt',
+        'mtbf',
+        'mttr',
     ];
 
     protected $casts = [
         'area_id' => 'integer',
-        'status' => 'integer',
-        'group_id' => 'integer',
+        'tahun' => 'integer',
+        'bulan' => 'integer',
+        'fb' => 'float',
+        'dt' => 'float',
+        'mtbf' => 'float',
+        'mttr' => 'float',
     ];
 
     public function area(): BelongsTo
     {
         return $this->belongsTo(Area::class);
-    }
-
-    public function group(): BelongsTo
-    {
-        return $this->belongsTo(Group::class);
     }
 }

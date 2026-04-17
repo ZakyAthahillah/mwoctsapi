@@ -11,6 +11,7 @@ class PositionDataHelper
         return [
             'id' => (string) $position->id,
             'area_id' => $position->area_id !== null ? (string) $position->area_id : null,
+            'area_name' => $position->area?->name,
             'name' => $position->name,
             'description' => $position->description,
             'status' => (int) $position->status,

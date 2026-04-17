@@ -195,10 +195,10 @@ class SerialNumberController extends Controller
     public function first(PartSerialNumber $partSerialNumber)
     {
         try {
-            $partSerialNumber->load('part');
+            $partSerialNumber->load(['part', 'area']);
 
             $logFirst = $partSerialNumber->logs()
-                ->with(['machine', 'position'])
+                ->with(['machine', 'position', 'updatedByUser'])
                 ->whereIn('action', [1, 2])
                 ->orderBy('id', 'desc')
                 ->first();
@@ -219,7 +219,7 @@ class SerialNumberController extends Controller
             }
 
             $user = auth('api')->user();
-            $partSerialNumber->load('part');
+            $partSerialNumber->load(['part', 'area']);
 
             if ($partSerialNumber->area_id !== null && $partSerialNumber->area_id !== $request->integer('area_id')) {
                 return ApiResponseHelper::error('Bad request', [
@@ -278,8 +278,8 @@ class SerialNumberController extends Controller
                 return $log;
             });
 
-            $result->load(['machine', 'position']);
-            $partSerialNumber->load('part');
+            $result->load(['machine', 'position', 'updatedByUser']);
+            $partSerialNumber->load(['part', 'area']);
 
             return ApiResponseHelper::success('Initial serial number assignment updated successfully', SerialNumberDataHelper::transformFirst($partSerialNumber, $result));
         } catch (\Throwable $exception) {

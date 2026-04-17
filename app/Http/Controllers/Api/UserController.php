@@ -33,7 +33,7 @@ class UserController extends Controller
                 $user->update($payload);
             });
 
-            $user->refresh();
+            $user->refresh()->load('area');
 
             return ApiResponseHelper::success('User updated successfully', UserDataHelper::transform($user));
         } catch (\Throwable $exception) {

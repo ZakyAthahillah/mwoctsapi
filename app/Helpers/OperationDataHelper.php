@@ -11,6 +11,7 @@ class OperationDataHelper
         return [
             'id' => (string) $operation->id,
             'area_id' => $operation->area_id !== null ? (string) $operation->area_id : null,
+            'area_name' => $operation->area?->name,
             'code' => $operation->code,
             'name' => $operation->name,
             'status' => (int) $operation->status,

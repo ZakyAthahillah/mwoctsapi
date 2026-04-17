@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Area;
+use App\Models\Group;
 use App\Models\Technician;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -53,8 +54,25 @@ class TechnicianApiTest extends TestCase
     public function test_authenticated_user_can_view_technician_detail(): void
     {
         $user = User::factory()->create();
+        $area = Area::factory()->create([
+            'name' => 'Area Teknisi',
+        ]);
+        $group = Group::factory()->forArea($area)->create([
+            'name' => 'Group Teknisi',
+        ]);
+        $divisionId = DB::table('divisions')->insertGetId([
+            'area_id' => $area->id,
+            'code' => 'DIV999',
+            'name' => 'Divisi Teknisi',
+            'status' => 1,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
         $technician = Technician::factory()->create([
+            'area_id' => $area->id,
             'code' => 'TCN001',
+            'division_id' => $divisionId,
+            'group_id' => $group->id,
         ]);
 
         $token = auth('api')->login($user);
@@ -64,7 +82,10 @@ class TechnicianApiTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('success', true)
-            ->assertJsonPath('data.code', 'TCN001');
+            ->assertJsonPath('data.code', 'TCN001')
+            ->assertJsonPath('data.area_name', 'Area Teknisi')
+            ->assertJsonPath('data.division_name', 'Divisi Teknisi')
+            ->assertJsonPath('data.group_name', 'Group Teknisi');
     }
 
     public function test_admin_can_create_technician(): void

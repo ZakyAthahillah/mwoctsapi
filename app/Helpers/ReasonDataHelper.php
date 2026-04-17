@@ -11,9 +11,11 @@ class ReasonDataHelper
         return [
             'id' => (string) $reason->id,
             'area_id' => $reason->area_id !== null ? (string) $reason->area_id : null,
+            'area_name' => $reason->area?->name,
             'code' => $reason->code,
             'name' => $reason->name,
             'division_id' => $reason->division_id !== null ? (string) $reason->division_id : null,
+            'division_name' => $reason->division?->name,
             'status' => (int) $reason->status,
             'created_at' => optional($reason->created_at)?->format('Y-m-d H:i:s'),
             'updated_at' => optional($reason->updated_at)?->format('Y-m-d H:i:s'),

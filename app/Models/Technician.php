@@ -30,4 +30,14 @@ class Technician extends Model
     {
         return $this->belongsTo(Area::class);
     }
+
+    public function division(): BelongsTo
+    {
+        return $this->belongsTo(Division::class);
+    }
+
+    public function group(): BelongsTo
+    {
+        return $this->belongsTo(Group::class);
+    }
 }

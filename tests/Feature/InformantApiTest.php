@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Area;
+use App\Models\Group;
 use App\Models\Informant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -52,8 +53,16 @@ class InformantApiTest extends TestCase
     public function test_authenticated_user_can_view_informant_detail(): void
     {
         $user = User::factory()->create();
+        $area = Area::factory()->create([
+            'name' => 'Area Pelapor',
+        ]);
+        $group = Group::factory()->forArea($area)->create([
+            'name' => 'Group Pelapor',
+        ]);
         $informant = Informant::factory()->create([
+            'area_id' => $area->id,
             'code' => 'INF001',
+            'group_id' => $group->id,
         ]);
 
         $token = auth('api')->login($user);
@@ -63,7 +72,9 @@ class InformantApiTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('success', true)
-            ->assertJsonPath('data.code', 'INF001');
+            ->assertJsonPath('data.code', 'INF001')
+            ->assertJsonPath('data.area_name', 'Area Pelapor')
+            ->assertJsonPath('data.group_name', 'Group Pelapor');
     }
 
     public function test_admin_can_create_informant(): void

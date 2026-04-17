@@ -38,6 +38,7 @@ class UserManagementApiTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('success', true)
             ->assertJsonPath('message', 'User updated successfully')
+            ->assertJsonPath('data.area_name', $area->name)
             ->assertJsonPath('data.email', 'updated@example.com')
             ->assertJsonPath('data.username', 'updateduser')
             ->assertJsonPath('data.is_operator', true)

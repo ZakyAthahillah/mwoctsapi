@@ -2,7 +2,10 @@
 
 use App\Http\Controllers\Api\AreaController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DivisionController;
+use App\Http\Controllers\Api\DowntimeController;
+use App\Http\Controllers\Api\FbdtController;
 use App\Http\Controllers\Api\GroupController;
 use App\Http\Controllers\Api\InformantController;
 use App\Http\Controllers\Api\MachineController;
@@ -25,6 +28,17 @@ Route::middleware('auth:api')->group(function () {
     // Authenticated session routes
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
+    Route::get('/dashboard', [DashboardController::class, 'index']);
+
+    // Downtime routes
+    Route::get('/downtimes', [DowntimeController::class, 'index']);
+
+    // FBDT routes
+    Route::get('/fbdts', [FbdtController::class, 'index']);
+    Route::get('/fbdts/check', [FbdtController::class, 'check']);
+    Route::get('/fbdts/{year}', [FbdtController::class, 'show']);
+    Route::post('/fbdts', [FbdtController::class, 'store']);
+    Route::put('/fbdts/{year}', [FbdtController::class, 'update']);
 
     // Area routes
     Route::get('/areas', [AreaController::class, 'index']);
