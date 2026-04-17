@@ -9,6 +9,7 @@ POST   /api/register
 POST   /api/login
 POST   /api/refresh
 POST   /api/logout
+GET    /api/me
 
 Areas
 -----
@@ -121,6 +122,7 @@ Access Notes
 
 - Require JWT token:
   POST /api/logout
+  GET /api/me
   All area endpoints
   All division endpoints
   All group endpoints
@@ -209,6 +211,9 @@ POST /api/login
   "login": "admin@example.com",
   "password": "password"
 }
+
+Get authenticated user profile
+GET /api/me
 
 Refresh Token
 POST /api/refresh

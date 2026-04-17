@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Helpers\ApiResponseHelper;
+use App\Helpers\AuthProfileDataHelper;
 use App\Helpers\UserDataHelper;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\LoginRequest;
@@ -109,6 +110,26 @@ class AuthController extends Controller
             ], 401);
         } catch (\Throwable $exception) {
             return ApiResponseHelper::error('Failed to refresh token');
+        }
+    }
+
+    public function me()
+    {
+        try {
+            /** @var User|null $user */
+            $user = auth('api')->user();
+
+            if ($user === null) {
+                return ApiResponseHelper::error('Unauthorized', [
+                    'auth' => ['User is not authenticated.'],
+                ], 401);
+            }
+
+            $user->load('area');
+
+            return ApiResponseHelper::success('Data retrieved successfully', AuthProfileDataHelper::transform($user));
+        } catch (\Throwable $exception) {
+            return ApiResponseHelper::error('Failed to retrieve authenticated user profile');
         }
     }
 }

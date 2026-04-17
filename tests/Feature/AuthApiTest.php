@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Area;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -151,6 +152,43 @@ class AuthApiTest extends TestCase
     public function test_refresh_requires_a_token(): void
     {
         $response = $this->postJson('/api/refresh');
+
+        $response->assertStatus(401)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('message', 'Unauthorized');
+    }
+
+    public function test_authenticated_user_can_get_profile_for_navbar(): void
+    {
+        $area = Area::factory()->create([
+            'name' => 'Jakarta Barat',
+            'object_name' => 'Site',
+        ]);
+        $user = User::factory()->create([
+            'area_id' => $area->id,
+            'name' => 'Navbar User',
+            'username' => 'navbaruser',
+            'email' => 'navbar@example.com',
+        ]);
+
+        $token = auth('api')->login($user);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/me');
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('message', 'Data retrieved successfully')
+            ->assertJsonPath('data.name', 'Navbar User')
+            ->assertJsonPath('data.username', 'navbaruser')
+            ->assertJsonPath('data.area.id', (string) $area->id)
+            ->assertJsonPath('data.area.name', 'Jakarta Barat')
+            ->assertJsonPath('data.area.object_name', 'Site');
+    }
+
+    public function test_get_profile_requires_authentication(): void
+    {
+        $response = $this->getJson('/api/me');
 
         $response->assertStatus(401)
             ->assertJsonPath('success', false)

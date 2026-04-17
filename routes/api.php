@@ -24,6 +24,7 @@ Route::post('/refresh', [AuthController::class, 'refresh']);
 Route::middleware('auth:api')->group(function () {
     // Authenticated session routes
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/me', [AuthController::class, 'me']);
 
     // Area routes
     Route::get('/areas', [AreaController::class, 'index']);

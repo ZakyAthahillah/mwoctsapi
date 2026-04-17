@@ -82,6 +82,22 @@ Invalidate the current JWT token.
 
 Protected endpoint: `auth:api`
 
+### GET `/api/me`
+
+Get the authenticated user profile for app UI needs such as navbar display.
+
+Protected endpoint: `auth:api`
+
+Returned data includes:
+
+- `name`
+- `username`
+- `email`
+- `image`
+- `area.id`
+- `area.name`
+- `area.object_name`
+
 ### POST `/api/refresh`
 
 Refresh the current JWT token and return a new bearer token.
