@@ -8,9 +8,13 @@ use App\Http\Controllers\Api\DowntimeController;
 use App\Http\Controllers\Api\FbdtController;
 use App\Http\Controllers\Api\GroupController;
 use App\Http\Controllers\Api\InformantController;
+use App\Http\Controllers\Api\JobController;
 use App\Http\Controllers\Api\MachineController;
+use App\Http\Controllers\Api\MtbfController;
+use App\Http\Controllers\Api\MttrController;
 use App\Http\Controllers\Api\OperationController;
 use App\Http\Controllers\Api\PartController;
+use App\Http\Controllers\Api\PermissionsController;
 use App\Http\Controllers\Api\PositionController;
 use App\Http\Controllers\Api\ReasonController;
 use App\Http\Controllers\Api\SerialNumberController;
@@ -32,6 +36,22 @@ Route::middleware('auth:api')->group(function () {
 
     // Downtime routes
     Route::get('/downtimes', [DowntimeController::class, 'index']);
+
+    // Job routes
+    Route::get('/jobs', [JobController::class, 'index']);
+    Route::get('/jobs/{job}', [JobController::class, 'show']);
+    Route::put('/jobs/{job}/start', [JobController::class, 'start']);
+    Route::put('/jobs/{job}/start-extend', [JobController::class, 'startExtend']);
+    Route::put('/jobs/{job}/finish', [JobController::class, 'finish']);
+    Route::put('/jobs/{job}/extend', [JobController::class, 'extend']);
+    Route::put('/jobs/{job}/approve', [JobController::class, 'approve']);
+
+    // MTBF routes
+    Route::get('/mtbf', [MtbfController::class, 'index']);
+    Route::get('/mtbf/taskplus', [MtbfController::class, 'taskplus']);
+
+    // MTTR routes
+    Route::get('/mttr', [MttrController::class, 'index']);
 
     // FBDT routes
     Route::get('/fbdts', [FbdtController::class, 'index']);
@@ -127,6 +147,12 @@ Route::middleware('auth:api')->group(function () {
 
     // Admin-only user management routes
     Route::middleware('admin')->group(function () {
+        Route::get('/permissions', [PermissionsController::class, 'index']);
+        Route::get('/permissions/{permission}', [PermissionsController::class, 'show']);
+        Route::post('/permissions', [PermissionsController::class, 'store']);
+        Route::put('/permissions/{permission}', [PermissionsController::class, 'update']);
+        Route::delete('/permissions/{permission}', [PermissionsController::class, 'destroy']);
+
         Route::put('/users/{user}', [UserController::class, 'update']);
         Route::delete('/users/{user}', [UserController::class, 'destroy']);
     });

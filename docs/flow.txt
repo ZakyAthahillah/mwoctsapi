@@ -1,0 +1,22 @@
+1. Area
+2. Role / Permission / User
+3. Group
+4. Informant
+5. Division
+6. Technician
+7. Shift
+8. Position
+9. Part
+10. Operation
+11. Link Operation ke Part dan Division
+12. Reason
+13. Link Reason ke Part dan Division
+14. Machine
+15. Assign Position ke Machine
+16. Assign Part ke Machine
+17. Input master Part Serial Number
+18. Map Serial Number ke Machine + Position + Part
+19. Reporting
+20. Start Job
+21. Finish Job
+22. Approve Job
