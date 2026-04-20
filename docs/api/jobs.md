@@ -26,7 +26,6 @@ Query parameters:
 
 - `per_page` optional
 - `status` optional: `new`, `on_progress`, `extend`, `waiting_for_approval`, `finish`
-- `area_id` optional
 - `division_id` optional
 - `machine_id` optional
 - `position_id` optional
@@ -37,6 +36,9 @@ Query parameters:
 - `reporting_type` optional
 - `technician_id` optional
 - `search` optional
+
+Catatan:
+- area dibatasi otomatis berdasarkan `area_id` user yang login
 
 ### GET `/api/jobs/{job}`
 

@@ -14,9 +14,10 @@ class DivisionApiTest extends TestCase
 
     public function test_authenticated_user_can_list_divisions_with_pagination(): void
     {
-        $user = User::factory()->create();
-        Division::factory()->count(12)->create();
-        Division::factory()->deletedStatus()->create();
+        $area = Area::factory()->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
+        Division::factory()->forArea($area)->count(12)->create();
+        Division::factory()->forArea($area)->deletedStatus()->create();
 
         $token = auth('api')->login($user);
 
@@ -33,17 +34,34 @@ class DivisionApiTest extends TestCase
         $this->assertCount(10, $response->json('data'));
     }
 
-    public function test_authenticated_user_can_filter_divisions_by_area(): void
+    public function test_authenticated_user_can_list_division_active_with_status_not_equal_eleven(): void
     {
-        $user = User::factory()->create();
         $area = Area::factory()->create();
-        Division::factory()->forArea($area)->count(2)->create();
-        Division::factory()->count(3)->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
+        Division::factory()->forArea($area)->create(['code' => 'DIV001', 'status' => 1]);
+        Division::factory()->forArea($area)->create(['code' => 'DIV002', 'status' => 0]);
+        Division::factory()->forArea($area)->create(['code' => 'DIV011', 'status' => 11]);
 
         $token = auth('api')->login($user);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
-            ->getJson('/api/divisions?area_id='.$area->id);
+            ->getJson('/api/division_active');
+
+        $response->assertOk()
+            ->assertJsonPath('meta.total', 2);
+    }
+
+    public function test_authenticated_user_can_filter_divisions_by_area(): void
+    {
+        $area = Area::factory()->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
+        Division::factory()->forArea($area)->count(2)->create();
+        Division::factory()->forArea(Area::factory()->create())->count(3)->create();
+
+        $token = auth('api')->login($user);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/divisions');
 
         $response->assertOk()
             ->assertJsonPath('meta.total', 2);
@@ -51,10 +69,11 @@ class DivisionApiTest extends TestCase
 
     public function test_authenticated_user_can_view_division_detail(): void
     {
-        $user = User::factory()->create();
         $division = Division::factory()->create([
+            'area_id' => $area = Area::factory()->create()->id,
             'code' => 'DIV001',
         ]);
+        $user = User::factory()->create(['area_id' => $area]);
 
         $token = auth('api')->login($user);
 
@@ -69,13 +88,12 @@ class DivisionApiTest extends TestCase
 
     public function test_authenticated_user_can_create_division(): void
     {
-        $user = User::factory()->create();
         $area = Area::factory()->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
         $token = auth('api')->login($user);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/divisions', [
-                'area_id' => $area->id,
                 'code' => 'DIV001',
                 'name' => 'Divisi A',
                 'status' => 1,
@@ -188,5 +206,19 @@ class DivisionApiTest extends TestCase
             ->assertJsonPath('success', false)
             ->assertJsonPath('message', 'Bad request')
             ->assertJsonPath('errors.request.0', 'Division has already been deleted.');
+    }
+
+    public function test_authenticated_user_can_toggle_division_status_between_ninety_nine_and_one(): void
+    {
+        $user = User::factory()->create();
+        $division = Division::factory()->deletedStatus()->create();
+        $token = auth('api')->login($user);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->putJson('/api/division_setstatus/'.$division->id);
+
+        $response->assertOk()
+            ->assertJsonPath('message', 'Division status updated successfully')
+            ->assertJsonPath('data.status', 1);
     }
 }

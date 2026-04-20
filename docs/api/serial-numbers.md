@@ -28,7 +28,7 @@ Query parameters:
 
 - `per_page` optional, default `10`, max `100`
 - `search` optional
-- `area_id` optional
+- area dibatasi otomatis berdasarkan `area_id` user yang login
 - `machine_id` optional
 - `position_id` optional
 - `part_id` optional
@@ -45,7 +45,6 @@ Request body:
 
 ```json
 {
-  "area_id": 1,
   "machine_id": 1,
   "position_id": 1,
   "part_id": 1,
@@ -69,7 +68,6 @@ Request body:
 
 ```json
 {
-  "area_id": 1,
   "machine_id": 1,
   "position_id": 1
 }
@@ -81,3 +79,4 @@ Request body:
 - Duplicate serial number usage in the same area is blocked.
 - The same area, machine, position, and part combination can only hold one active serial number assignment.
 - Initial assignment writes into `serial_number_logs`.
+- `GET` dan create assignment awal memakai `area_id` dari user login.

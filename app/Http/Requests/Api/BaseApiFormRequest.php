@@ -8,6 +8,13 @@ use Illuminate\Http\Exceptions\HttpResponseException;
 
 abstract class BaseApiFormRequest extends FormRequest
 {
+    protected function authenticatedAreaId(): ?int
+    {
+        $areaId = $this->user()?->area_id;
+
+        return $areaId !== null ? (int) $areaId : null;
+    }
+
     protected function failedValidation(Validator $validator): void
     {
         throw new HttpResponseException(response()->json([

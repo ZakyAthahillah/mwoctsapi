@@ -14,9 +14,10 @@ class ShiftApiTest extends TestCase
 
     public function test_authenticated_user_can_list_shifts_with_pagination(): void
     {
-        $user = User::factory()->create();
-        Shift::factory()->count(12)->create();
-        Shift::factory()->deletedStatus()->create();
+        $area = Area::factory()->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
+        Shift::factory()->forArea($area)->count(12)->create();
+        Shift::factory()->forArea($area)->deletedStatus()->create();
 
         $token = auth('api')->login($user);
 
@@ -33,17 +34,34 @@ class ShiftApiTest extends TestCase
         $this->assertCount(10, $response->json('data'));
     }
 
-    public function test_authenticated_user_can_filter_shifts_by_area(): void
+    public function test_authenticated_user_can_list_shift_active_with_status_not_equal_eleven(): void
     {
-        $user = User::factory()->create();
         $area = Area::factory()->create();
-        Shift::factory()->forArea($area)->count(2)->create();
-        Shift::factory()->count(3)->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
+        Shift::factory()->forArea($area)->create(['name' => 'Shift 1', 'status' => 1]);
+        Shift::factory()->forArea($area)->create(['name' => 'Shift 2', 'status' => 0]);
+        Shift::factory()->forArea($area)->create(['name' => 'Shift 11', 'status' => 11]);
 
         $token = auth('api')->login($user);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
-            ->getJson('/api/shifts?area_id='.$area->id);
+            ->getJson('/api/shift_active');
+
+        $response->assertOk()
+            ->assertJsonPath('meta.total', 2);
+    }
+
+    public function test_authenticated_user_can_filter_shifts_by_area(): void
+    {
+        $area = Area::factory()->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
+        Shift::factory()->forArea($area)->count(2)->create();
+        Shift::factory()->forArea(Area::factory()->create())->count(3)->create();
+
+        $token = auth('api')->login($user);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/shifts');
 
         $response->assertOk()
             ->assertJsonPath('meta.total', 2);
@@ -51,10 +69,11 @@ class ShiftApiTest extends TestCase
 
     public function test_authenticated_user_can_view_shift_detail(): void
     {
-        $user = User::factory()->create();
         $shift = Shift::factory()->create([
+            'area_id' => $area = Area::factory()->create()->id,
             'name' => 'Shift Pagi',
         ]);
+        $user = User::factory()->create(['area_id' => $area]);
 
         $token = auth('api')->login($user);
 
@@ -68,13 +87,12 @@ class ShiftApiTest extends TestCase
 
     public function test_authenticated_user_can_create_shift(): void
     {
-        $user = User::factory()->create();
         $area = Area::factory()->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
         $token = auth('api')->login($user);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/shifts', [
-                'area_id' => $area->id,
                 'name' => 'Shift Malam',
                 'time_start' => '20:00',
                 'time_finish' => '04:00',
@@ -194,5 +212,19 @@ class ShiftApiTest extends TestCase
             ->assertJsonPath('success', false)
             ->assertJsonPath('message', 'Bad request')
             ->assertJsonPath('errors.request.0', 'Shift has already been deleted.');
+    }
+
+    public function test_authenticated_user_can_toggle_shift_status_between_ninety_nine_and_one(): void
+    {
+        $user = User::factory()->create();
+        $shift = Shift::factory()->deletedStatus()->create();
+        $token = auth('api')->login($user);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->putJson('/api/shift_setstatus/'.$shift->id);
+
+        $response->assertOk()
+            ->assertJsonPath('message', 'Shift status updated successfully')
+            ->assertJsonPath('data.status', 1);
     }
 }

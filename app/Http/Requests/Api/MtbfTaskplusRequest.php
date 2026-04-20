@@ -13,7 +13,6 @@ class MtbfTaskplusRequest extends BaseApiFormRequest
     {
         return [
             'year' => ['required', 'integer'],
-            'area_id' => ['sometimes', 'integer'],
         ];
     }
 }

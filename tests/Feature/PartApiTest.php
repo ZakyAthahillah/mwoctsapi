@@ -14,9 +14,10 @@ class PartApiTest extends TestCase
 
     public function test_authenticated_user_can_list_parts_with_pagination(): void
     {
-        $user = User::factory()->create();
-        Part::factory()->count(12)->create();
-        Part::factory()->deletedStatus()->create();
+        $area = Area::factory()->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
+        Part::factory()->forArea($area)->count(12)->create();
+        Part::factory()->forArea($area)->deletedStatus()->create();
 
         $token = auth('api')->login($user);
 
@@ -33,17 +34,34 @@ class PartApiTest extends TestCase
         $this->assertCount(10, $response->json('data'));
     }
 
-    public function test_authenticated_user_can_filter_parts_by_area(): void
+    public function test_authenticated_user_can_list_part_active_with_status_not_equal_eleven(): void
     {
-        $user = User::factory()->create();
         $area = Area::factory()->create();
-        Part::factory()->forArea($area)->count(2)->create();
-        Part::factory()->count(3)->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
+        Part::factory()->forArea($area)->create(['code' => 'PRT001', 'status' => 1]);
+        Part::factory()->forArea($area)->create(['code' => 'PRT002', 'status' => 0]);
+        Part::factory()->forArea($area)->create(['code' => 'PRT011', 'status' => 11]);
 
         $token = auth('api')->login($user);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
-            ->getJson('/api/parts?area_id='.$area->id);
+            ->getJson('/api/part_active');
+
+        $response->assertOk()
+            ->assertJsonPath('meta.total', 2);
+    }
+
+    public function test_authenticated_user_can_filter_parts_by_area(): void
+    {
+        $area = Area::factory()->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
+        Part::factory()->forArea($area)->count(2)->create();
+        Part::factory()->forArea(Area::factory()->create())->count(3)->create();
+
+        $token = auth('api')->login($user);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/parts');
 
         $response->assertOk()
             ->assertJsonPath('meta.total', 2);
@@ -51,10 +69,11 @@ class PartApiTest extends TestCase
 
     public function test_authenticated_user_can_view_part_detail(): void
     {
-        $user = User::factory()->create();
         $part = Part::factory()->create([
+            'area_id' => $area = Area::factory()->create()->id,
             'code' => 'PRT001',
         ]);
+        $user = User::factory()->create(['area_id' => $area]);
 
         $token = auth('api')->login($user);
 
@@ -68,13 +87,12 @@ class PartApiTest extends TestCase
 
     public function test_authenticated_user_can_create_part(): void
     {
-        $user = User::factory()->create();
         $area = Area::factory()->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
         $token = auth('api')->login($user);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/parts', [
-                'area_id' => $area->id,
                 'code' => 'PRT001',
                 'name' => 'Part A',
                 'description' => 'Deskripsi part',
@@ -190,5 +208,19 @@ class PartApiTest extends TestCase
             ->assertJsonPath('success', false)
             ->assertJsonPath('message', 'Bad request')
             ->assertJsonPath('errors.request.0', 'Part has already been deleted.');
+    }
+
+    public function test_authenticated_user_can_toggle_part_status_between_ninety_nine_and_one(): void
+    {
+        $user = User::factory()->create();
+        $part = Part::factory()->deletedStatus()->create();
+        $token = auth('api')->login($user);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->putJson('/api/part_setstatus/'.$part->id);
+
+        $response->assertOk()
+            ->assertJsonPath('message', 'Part status updated successfully')
+            ->assertJsonPath('data.status', 1);
     }
 }

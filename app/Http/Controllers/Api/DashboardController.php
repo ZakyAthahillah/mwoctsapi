@@ -15,15 +15,11 @@ class DashboardController extends Controller
     {
         try {
             $user = auth('api')->user();
-            $areaId = $request->query('area_id');
-
-            if (($areaId === null || $areaId === '') && $user?->area_id !== null) {
-                $areaId = $user->area_id;
-            }
+            $areaId = $user?->area_id;
 
             $counts = DB::table('reportings')
                 ->select('status', DB::raw('COUNT(*) as total'))
-                ->when($areaId !== null && $areaId !== '', fn ($query) => $query->where('area_id', $areaId))
+                ->when($areaId !== null, fn ($query) => $query->where('area_id', $areaId), fn ($query) => $query->whereNull('area_id'))
                 ->groupBy('status')
                 ->pluck('total', 'status');
 

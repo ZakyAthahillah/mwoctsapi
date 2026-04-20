@@ -13,18 +13,53 @@ use Illuminate\Support\Facades\DB;
 
 class PositionController extends Controller
 {
-    public function index(Request $request)
+    public function positionActive(Request $request)
     {
         try {
+            $user = auth('api')->user();
             $perPage = (int) $request->integer('per_page', 10);
             $perPage = max(1, min($perPage, 100));
             $search = trim((string) $request->query('search', ''));
-            $areaId = $request->query('area_id');
+
+            $positionsQuery = Position::query()
+                ->with('area')
+                ->where('status', '<>', 11)
+                ->when($user?->area_id !== null, fn ($query) => $query->where('area_id', $user->area_id), fn ($query) => $query->whereNull('area_id'))
+                ->when($search !== '', function ($query) use ($search) {
+                    $query->where(function ($subQuery) use ($search) {
+                        $subQuery->where('name', 'like', '%'.$search.'%')
+                            ->orWhere('description', 'like', '%'.$search.'%');
+                    });
+                })
+                ->orderBy('id', 'desc');
+
+            $positions = $positionsQuery->paginate($perPage)->appends($request->query());
+
+            return ApiResponseHelper::success('Data retrieved successfully', $positions->getCollection()->map(
+                fn (Position $position) => PositionDataHelper::transform($position)
+            )->all(), [
+                'current_page' => $positions->currentPage(),
+                'last_page' => $positions->lastPage(),
+                'per_page' => $positions->perPage(),
+                'total' => $positions->total(),
+            ]);
+        } catch (\Throwable $exception) {
+            return ApiResponseHelper::error('Failed to retrieve active positions');
+        }
+    }
+
+    public function index(Request $request)
+    {
+        try {
+            $user = auth('api')->user();
+            $perPage = (int) $request->integer('per_page', 10);
+            $perPage = max(1, min($perPage, 100));
+            $search = trim((string) $request->query('search', ''));
 
             $positionsQuery = Position::query()
                 ->with('area')
                 ->where('status', '<>', 99)
-                ->when($areaId !== null && $areaId !== '', fn ($query) => $query->where('area_id', $areaId))
+                ->when($user?->area_id !== null, fn ($query) => $query->where('area_id', $user->area_id), fn ($query) => $query->whereNull('area_id'))
                 ->when($search !== '', function ($query) use ($search) {
                     $query->where(function ($subQuery) use ($search) {
                         $subQuery->where('name', 'like', '%'.$search.'%')
@@ -53,7 +88,7 @@ class PositionController extends Controller
         try {
             $position = DB::transaction(function () use ($request) {
                 return Position::create([
-                    'area_id' => $request->input('area_id'),
+                    'area_id' => auth('api')->user()?->area_id,
                     'name' => $request->string('name')->toString(),
                     'description' => $request->input('description'),
                     'status' => $request->integer('status'),
@@ -71,7 +106,11 @@ class PositionController extends Controller
     public function show(Position $position)
     {
         try {
+            $user = auth('api')->user();
             if ((int) $position->status === 99) {
+                return ApiResponseHelper::error('Resource not found', null, 404);
+            }
+            if ((int) $position->area_id !== (int) $user?->area_id) {
                 return ApiResponseHelper::error('Resource not found', null, 404);
             }
 
@@ -127,6 +166,27 @@ class PositionController extends Controller
             return ApiResponseHelper::success('Position deleted successfully', PositionDataHelper::transform($position));
         } catch (\Throwable $exception) {
             return ApiResponseHelper::error('Failed to delete position');
+        }
+    }
+
+    public function positionSetstatus(Position $position)
+    {
+        try {
+            if (! in_array((int) $position->status, [1, 99], true)) {
+                return ApiResponseHelper::error('Bad request', [
+                    'status' => ['Position status must be 1 or 99 to be toggled.'],
+                ], 400);
+            }
+
+            $position->update([
+                'status' => (int) $position->status === 99 ? 1 : 99,
+            ]);
+
+            $position->refresh()->load('area');
+
+            return ApiResponseHelper::success('Position status updated successfully', PositionDataHelper::transform($position));
+        } catch (\Throwable $exception) {
+            return ApiResponseHelper::error('Failed to update position status');
         }
     }
 }

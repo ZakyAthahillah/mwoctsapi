@@ -15,9 +15,11 @@ class InformantApiTest extends TestCase
 
     public function test_authenticated_user_can_list_informants_with_pagination(): void
     {
-        $user = User::factory()->create();
-        Informant::factory()->count(12)->create();
-        Informant::factory()->deletedStatus()->create();
+        $area = Area::factory()->create();
+        $group = Group::factory()->forArea($area)->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
+        Informant::factory()->forArea($area)->count(12)->create(['group_id' => $group->id]);
+        Informant::factory()->forArea($area)->deletedStatus()->create(['group_id' => $group->id]);
 
         $token = auth('api')->login($user);
 
@@ -34,17 +36,36 @@ class InformantApiTest extends TestCase
         $this->assertCount(10, $response->json('data'));
     }
 
-    public function test_authenticated_user_can_filter_informants_by_area(): void
+    public function test_authenticated_user_can_list_informant_active_with_status_not_equal_eleven(): void
     {
-        $user = User::factory()->create();
         $area = Area::factory()->create();
-        Informant::factory()->forArea($area)->count(2)->create();
-        Informant::factory()->count(3)->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
+        $group = \App\Models\Group::factory()->forArea($area)->create();
+        Informant::factory()->forArea($area)->create(['group_id' => $group->id, 'code' => 'INF001', 'status' => 1]);
+        Informant::factory()->forArea($area)->create(['group_id' => $group->id, 'code' => 'INF002', 'status' => 0]);
+        Informant::factory()->forArea($area)->create(['group_id' => $group->id, 'code' => 'INF011', 'status' => 11]);
 
         $token = auth('api')->login($user);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
-            ->getJson('/api/informants?area_id='.$area->id);
+            ->getJson('/api/informant_active?group_id='.$group->id);
+
+        $response->assertOk()
+            ->assertJsonPath('meta.total', 2);
+    }
+
+    public function test_authenticated_user_can_filter_informants_by_area(): void
+    {
+        $area = Area::factory()->create();
+        $group = Group::factory()->forArea($area)->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
+        Informant::factory()->forArea($area)->count(2)->create(['group_id' => $group->id]);
+        Informant::factory()->forArea(Area::factory()->create())->count(3)->create();
+
+        $token = auth('api')->login($user);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/informants');
 
         $response->assertOk()
             ->assertJsonPath('meta.total', 2);
@@ -52,10 +73,10 @@ class InformantApiTest extends TestCase
 
     public function test_authenticated_user_can_view_informant_detail(): void
     {
-        $user = User::factory()->create();
         $area = Area::factory()->create([
             'name' => 'Area Pelapor',
         ]);
+        $user = User::factory()->create(['area_id' => $area->id]);
         $group = Group::factory()->forArea($area)->create([
             'name' => 'Group Pelapor',
         ]);
@@ -79,17 +100,17 @@ class InformantApiTest extends TestCase
 
     public function test_admin_can_create_informant(): void
     {
-        $admin = User::factory()->admin()->create();
         $area = Area::factory()->create();
+        $admin = User::factory()->admin()->create(['area_id' => $area->id]);
+        $group = Group::factory()->forArea($area)->create();
         $token = auth('api')->login($admin);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/informants', [
-                'area_id' => $area->id,
                 'code' => 'INF001',
                 'name' => 'Pelapor A',
                 'status' => 1,
-                'group_id' => 5,
+                'group_id' => $group->id,
             ]);
 
         $response->assertStatus(201)
@@ -101,7 +122,7 @@ class InformantApiTest extends TestCase
             'code' => 'INF001',
             'name' => 'Pelapor A',
             'area_id' => $area->id,
-            'group_id' => 5,
+            'group_id' => $group->id,
         ]);
     }
 
@@ -123,12 +144,12 @@ class InformantApiTest extends TestCase
 
     public function test_authenticated_user_can_create_informant(): void
     {
-        $user = User::factory()->create();
+        $area = Area::factory()->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
         $token = auth('api')->login($user);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/informants', [
-                'area_id' => null,
                 'code' => 'INF001',
                 'name' => 'Pelapor A',
                 'status' => 1,
@@ -221,5 +242,19 @@ class InformantApiTest extends TestCase
             ->assertJsonPath('success', false)
             ->assertJsonPath('message', 'Bad request')
             ->assertJsonPath('errors.request.0', 'Informant has already been deleted.');
+    }
+
+    public function test_authenticated_user_can_toggle_informant_status_between_ninety_nine_and_one(): void
+    {
+        $user = User::factory()->create();
+        $informant = Informant::factory()->deletedStatus()->create();
+        $token = auth('api')->login($user);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->putJson('/api/informant_setstatus/'.$informant->id);
+
+        $response->assertOk()
+            ->assertJsonPath('message', 'Informant status updated successfully')
+            ->assertJsonPath('data.status', 1);
     }
 }

@@ -12,7 +12,6 @@ class StoreFbdtRequest extends BaseApiFormRequest
     public function rules(): array
     {
         return [
-            'area_id' => ['required', 'integer', 'exists:areas,id'],
             'year' => ['required', 'integer', 'digits:4'],
             'targets' => ['required', 'array', 'min:1'],
             'targets.*.month' => ['required', 'integer', 'between:1,12', 'distinct'],

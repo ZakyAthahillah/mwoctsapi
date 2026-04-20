@@ -16,10 +16,7 @@ class MtbfController extends Controller
     {
         try {
             $user = auth('api')->user();
-            $areaId = $request->input('area_id');
-            if (($areaId === null || $areaId === '') && $user?->area_id !== null) {
-                $areaId = $user->area_id;
-            }
+            $areaId = $user?->area_id;
 
             $type = (string) $request->input('type');
             $year = Carbon::now('Asia/Jakarta')->year;
@@ -43,7 +40,7 @@ class MtbfController extends Controller
                 ])
                 ->where('status', 5)
                 ->where('reporting_type', 1)
-                ->when($areaId !== null && $areaId !== '', fn ($query) => $query->where('area_id', $areaId))
+                ->when($areaId !== null, fn ($query) => $query->where('area_id', $areaId), fn ($query) => $query->whereNull('area_id'))
                 ->when($request->filled('machine_id') && ! $isTaskplus, fn ($query) => $query->where('machine_id', $request->integer('machine_id')))
                 ->when($request->filled('position_id') && ! $isTaskplus, fn ($query) => $query->where('position_id', $request->integer('position_id')))
                 ->when($request->filled('part_id') && ! $isTaskplus, fn ($query) => $query->where('part_id', $request->integer('part_id')))
@@ -86,6 +83,7 @@ class MtbfController extends Controller
             $shiftNames = $type === 'shift'
                 ? DB::table('shifts')
                     ->when($areaId !== null && $areaId !== '', fn ($query) => $query->where('area_id', $areaId))
+                    ->when($areaId === null, fn ($query) => $query->whereNull('area_id'))
                     ->pluck('name', 'id')
                     ->all()
                 : [];
@@ -143,10 +141,7 @@ class MtbfController extends Controller
     {
         try {
             $user = auth('api')->user();
-            $areaId = $request->input('area_id');
-            if (($areaId === null || $areaId === '') && $user?->area_id !== null) {
-                $areaId = $user->area_id;
-            }
+            $areaId = $user?->area_id;
 
             $yearReq = $request->integer('year');
 
@@ -154,7 +149,7 @@ class MtbfController extends Controller
                 ->where('status', 5)
                 ->where('reporting_type', 1)
                 ->whereYear('reporting_date', $yearReq)
-                ->when($areaId !== null && $areaId !== '', fn ($query) => $query->where('area_id', $areaId))
+                ->when($areaId !== null, fn ($query) => $query->where('area_id', $areaId), fn ($query) => $query->whereNull('area_id'))
                 ->get()
                 ->groupBy(function ($row) {
                     return Carbon::parse((string) $row->reporting_date)->month;

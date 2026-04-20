@@ -22,7 +22,6 @@ class MtbfIndexRequest extends BaseApiFormRequest
             'part_id' => ['sometimes', 'integer'],
             'part_serial_number_id' => ['sometimes', 'integer'],
             'is_taskplus' => ['sometimes', 'boolean'],
-            'area_id' => ['sometimes', 'integer'],
         ];
     }
 }

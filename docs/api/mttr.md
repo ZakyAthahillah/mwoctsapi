@@ -20,7 +20,6 @@ Gunakan JWT bearer token.
 Query parameters umum:
 
 - `type` required: `yearly`, `monthly`, `daily`, `shift`
-- `area_id` optional
 - `machine_id` optional
 - `position_id` optional
 - `part_id` optional
@@ -40,3 +39,6 @@ GET /api/mttr?type=monthly&year=2026
 GET /api/mttr?type=daily&year=2026&month=4
 GET /api/mttr?type=shift&period_start=2026-04-01&period_end=2026-04-07
 ```
+
+Catatan:
+- Area dibatasi otomatis berdasarkan `area_id` user yang login.

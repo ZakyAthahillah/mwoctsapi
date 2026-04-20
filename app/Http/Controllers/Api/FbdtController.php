@@ -20,16 +20,12 @@ class FbdtController extends Controller
             $user = auth('api')->user();
             $perPage = (int) $request->integer('per_page', 10);
             $perPage = max(1, min($perPage, 100));
-            $areaId = $request->query('area_id');
-
-            if (($areaId === null || $areaId === '') && $user?->area_id !== null) {
-                $areaId = $user->area_id;
-            }
+            $areaId = $user?->area_id;
 
             $query = Fbdt::query()
                 ->leftJoin('areas', 'areas.id', '=', 'fbdts.area_id')
                 ->select('fbdts.tahun', 'fbdts.area_id', 'areas.name as area_name', DB::raw('COUNT(*) as months_count'))
-                ->when($areaId !== null && $areaId !== '', fn ($builder) => $builder->where('area_id', $areaId))
+                ->when($areaId !== null, fn ($builder) => $builder->where('fbdts.area_id', $areaId), fn ($builder) => $builder->whereNull('fbdts.area_id'))
                 ->when($request->filled('year'), fn ($builder) => $builder->where('tahun', $request->integer('year')))
                 ->groupBy('fbdts.tahun', 'fbdts.area_id', 'areas.name')
                 ->orderByDesc('fbdts.tahun');
@@ -52,7 +48,7 @@ class FbdtController extends Controller
     public function store(StoreFbdtRequest $request)
     {
         try {
-            $areaId = $request->integer('area_id');
+            $areaId = auth('api')->user()?->area_id;
             $year = $request->integer('year');
 
             DB::transaction(function () use ($request, $areaId, $year) {
@@ -90,15 +86,11 @@ class FbdtController extends Controller
     {
         try {
             $user = auth('api')->user();
-            $areaId = $request->query('area_id');
-
-            if (($areaId === null || $areaId === '') && $user?->area_id !== null) {
-                $areaId = $user->area_id;
-            }
+            $areaId = $user?->area_id;
 
             $rows = Fbdt::query()
                 ->with('area')
-                ->when($areaId !== null && $areaId !== '', fn ($builder) => $builder->where('area_id', $areaId))
+                ->when($areaId !== null, fn ($builder) => $builder->where('area_id', $areaId), fn ($builder) => $builder->whereNull('area_id'))
                 ->where('tahun', $year)
                 ->orderBy('bulan')
                 ->get();
@@ -116,7 +108,7 @@ class FbdtController extends Controller
     public function update(UpdateFbdtRequest $request, int $year)
     {
         try {
-            $areaId = $request->integer('area_id');
+            $areaId = auth('api')->user()?->area_id;
 
             DB::transaction(function () use ($request, $areaId, $year) {
                 Fbdt::query()
@@ -152,8 +144,9 @@ class FbdtController extends Controller
     public function check(CheckFbdtRequest $request)
     {
         try {
+            $areaId = auth('api')->user()?->area_id;
             $exists = Fbdt::query()
-                ->where('area_id', $request->integer('area_id'))
+                ->where('area_id', $areaId)
                 ->where('tahun', $request->integer('year'))
                 ->exists();
 

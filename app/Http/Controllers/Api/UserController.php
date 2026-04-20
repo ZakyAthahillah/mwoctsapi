@@ -61,4 +61,33 @@ class UserController extends Controller
             return ApiResponseHelper::error('Failed to delete user');
         }
     }
+
+    public function userSetstatus(User $user)
+    {
+        try {
+            if (! in_array((int) $user->status, [1, 99], true)) {
+                return ApiResponseHelper::error('Bad request', [
+                    'status' => ['User status must be 1 or 99 to be toggled.'],
+                ], 400);
+            }
+
+            if ((int) auth('api')->id() === (int) $user->id && (int) $user->status === 1) {
+                return ApiResponseHelper::error('Bad request', [
+                    'user' => ['Admin cannot deactivate their own account through this endpoint.'],
+                ], 400);
+            }
+
+            DB::transaction(function () use ($user) {
+                $user->update([
+                    'status' => (int) $user->status === 99 ? 1 : 99,
+                ]);
+            });
+
+            $user->refresh()->load('area');
+
+            return ApiResponseHelper::success('User status updated successfully', UserDataHelper::transform($user));
+        } catch (\Throwable $exception) {
+            return ApiResponseHelper::error('Failed to update user status');
+        }
+    }
 }

@@ -18,10 +18,7 @@ class DowntimeController extends Controller
             $perPage = (int) $request->integer('per_page', 10);
             $perPage = max(1, min($perPage, 100));
 
-            $areaId = $request->input('area_id');
-            if (($areaId === null || $areaId === '') && $user?->area_id !== null) {
-                $areaId = $user->area_id;
-            }
+            $areaId = $user?->area_id;
 
             $periodStart = $request->input('period_start')
                 ? Carbon::parse((string) $request->input('period_start'))->startOfDay()
@@ -46,7 +43,7 @@ class DowntimeController extends Controller
                 ->leftJoin('groups', 'groups.id', '=', 'informants.group_id')
                 ->leftJoin('part_serial_numbers', 'part_serial_numbers.id', '=', 'reportings.part_serial_number_id')
                 ->where('reportings.status', 5)
-                ->when($areaId !== null && $areaId !== '', fn ($query) => $query->where('reportings.area_id', $areaId))
+                ->when($areaId !== null, fn ($query) => $query->where('reportings.area_id', $areaId), fn ($query) => $query->whereNull('reportings.area_id'))
                 ->when($request->filled('division_id'), fn ($query) => $query->where('reportings.division_id', $request->integer('division_id')))
                 ->when($request->filled('machine_id'), fn ($query) => $query->where('reportings.machine_id', $request->integer('machine_id')))
                 ->when($request->filled('position_id'), fn ($query) => $query->where('reportings.position_id', $request->integer('position_id')))

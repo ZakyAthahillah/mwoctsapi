@@ -12,7 +12,6 @@ class UpdateFbdtRequest extends BaseApiFormRequest
     public function rules(): array
     {
         return [
-            'area_id' => ['required', 'integer', 'exists:areas,id'],
             'targets' => ['required', 'array', 'min:1'],
             'targets.*.month' => ['required', 'integer', 'between:1,12', 'distinct'],
             'targets.*.fb' => ['nullable', 'numeric'],

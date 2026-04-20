@@ -16,11 +16,10 @@ Get paginated FBDT year summaries.
 
 ### GET `/api/fbdts/check`
 
-Check whether FBDT data already exists for an area and year.
+Check whether FBDT data already exists for the authenticated user's area and year.
 
 Query parameters:
 
-- `area_id` required
 - `year` required
 
 ### GET `/api/fbdts/{year}`
@@ -39,7 +38,6 @@ Request body for create and update:
 
 ```json
 {
-  "area_id": 1,
   "year": 2026,
   "targets": [
     {
@@ -52,3 +50,8 @@ Request body for create and update:
   ]
 }
 ```
+
+## Notes
+
+- Semua endpoint FBDT memakai `area_id` dari user login.
+- Request body create dan update tidak perlu mengirim `area_id`.

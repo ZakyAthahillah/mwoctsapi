@@ -25,6 +25,15 @@ Query parameters:
 - `per_page` optional, default `10`, max `100`
 - `search` optional
 
+### GET `/api/areas_active`
+
+Get paginated area data where `status != 11`.
+
+Query parameters:
+
+- `per_page` optional, default `10`, max `100`
+- `search` optional
+
 Success response:
 
 ```json
@@ -90,8 +99,14 @@ Request body:
 
 Delete an area logically by changing `status` to `99`.
 
+### PUT `/api/area_setstatus/{id}`
+
+Toggle area status between `99` and `1`.
+
 ## Notes
 
 - Active area queries exclude records with `status = 99`.
+- `GET /api/areas_active` excludes records with `status = 11`.
+- `PUT /api/area_setstatus/{id}` only supports current status `1` and `99`.
 - Validation is required for create and update requests.
 - Forbidden requests return the standard API error format.

@@ -13,18 +13,19 @@ class StoreReasonRequest extends BaseApiFormRequest
 
     public function rules(): array
     {
+        $areaId = $this->authenticatedAreaId();
+
         return [
-            'area_id' => ['present', 'nullable', 'integer', 'exists:areas,id'],
             'code' => [
                 'required',
                 'string',
                 'max:10',
-                Rule::unique('reasons', 'code')->where(function ($query) {
+                Rule::unique('reasons', 'code')->where(function ($query) use ($areaId) {
                     $query->where('status', '<>', 99);
 
-                    return $this->input('area_id') === null
+                    return $areaId === null
                         ? $query->whereNull('area_id')
-                        : $query->where('area_id', $this->input('area_id'));
+                        : $query->where('area_id', $areaId);
                 }),
             ],
             'name' => ['required', 'string', 'max:255'],

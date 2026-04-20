@@ -32,6 +32,39 @@ class AreaApiTest extends TestCase
         $this->assertCount(10, $response->json('data'));
     }
 
+    public function test_authenticated_user_can_list_areas_active_with_status_not_equal_eleven(): void
+    {
+        $user = User::factory()->create();
+        Area::factory()->create([
+            'code' => 'AREA01',
+            'status' => 1,
+        ]);
+        Area::factory()->create([
+            'code' => 'AREA02',
+            'status' => 0,
+        ]);
+        Area::factory()->create([
+            'code' => 'AREA11',
+            'status' => 11,
+        ]);
+
+        $token = auth('api')->login($user);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/areas_active?per_page=10');
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('message', 'Data retrieved successfully')
+            ->assertJsonPath('meta.total', 2);
+
+        $codes = collect($response->json('data'))->pluck('code');
+
+        $this->assertTrue($codes->contains('AREA01'));
+        $this->assertTrue($codes->contains('AREA02'));
+        $this->assertFalse($codes->contains('AREA11'));
+    }
+
     public function test_authenticated_user_can_view_area_detail(): void
     {
         $user = User::factory()->create();
@@ -188,5 +221,19 @@ class AreaApiTest extends TestCase
             ->assertJsonPath('success', false)
             ->assertJsonPath('message', 'Bad request')
             ->assertJsonPath('errors.request.0', 'Area has already been deleted.');
+    }
+
+    public function test_authenticated_user_can_toggle_area_status_between_ninety_nine_and_one(): void
+    {
+        $user = User::factory()->create();
+        $area = Area::factory()->deletedStatus()->create();
+        $token = auth('api')->login($user);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->putJson('/api/area_setstatus/'.$area->id);
+
+        $response->assertOk()
+            ->assertJsonPath('message', 'Area status updated successfully')
+            ->assertJsonPath('data.status', 1);
     }
 }

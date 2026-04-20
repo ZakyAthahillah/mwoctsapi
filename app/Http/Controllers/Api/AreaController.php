@@ -13,6 +13,39 @@ use Illuminate\Support\Facades\DB;
 
 class AreaController extends Controller
 {
+    public function areaActive(Request $request)
+    {
+        try {
+            $perPage = (int) $request->integer('per_page', 10);
+            $perPage = max(1, min($perPage, 100));
+            $search = trim((string) $request->query('search', ''));
+
+            $areasQuery = Area::query()
+                ->where('status', '<>', 11)
+                ->when($search !== '', function ($query) use ($search) {
+                    $query->where(function ($subQuery) use ($search) {
+                        $subQuery->where('code', 'like', '%'.$search.'%')
+                            ->orWhere('name', 'like', '%'.$search.'%')
+                            ->orWhere('object_name', 'like', '%'.$search.'%');
+                    });
+                })
+                ->orderBy('id', 'desc');
+
+            $areas = $areasQuery->paginate($perPage)->appends($request->query());
+
+            return ApiResponseHelper::success('Data retrieved successfully', $areas->getCollection()->map(
+                fn (Area $area) => AreaDataHelper::transform($area)
+            )->all(), [
+                'current_page' => $areas->currentPage(),
+                'last_page' => $areas->lastPage(),
+                'per_page' => $areas->perPage(),
+                'total' => $areas->total(),
+            ]);
+        } catch (\Throwable $exception) {
+            return ApiResponseHelper::error('Failed to retrieve active areas');
+        }
+    }
+
     public function index(Request $request)
     {
         try {
@@ -119,6 +152,27 @@ class AreaController extends Controller
             return ApiResponseHelper::success('Area deleted successfully', AreaDataHelper::transform($area));
         } catch (\Throwable $exception) {
             return ApiResponseHelper::error('Failed to delete area');
+        }
+    }
+
+    public function areaSetstatus(Area $area)
+    {
+        try {
+            if (! in_array((int) $area->status, [1, 99], true)) {
+                return ApiResponseHelper::error('Bad request', [
+                    'status' => ['Area status must be 1 or 99 to be toggled.'],
+                ], 400);
+            }
+
+            $area->update([
+                'status' => (int) $area->status === 99 ? 1 : 99,
+            ]);
+
+            $area->refresh();
+
+            return ApiResponseHelper::success('Area status updated successfully', AreaDataHelper::transform($area));
+        } catch (\Throwable $exception) {
+            return ApiResponseHelper::error('Failed to update area status');
         }
     }
 }

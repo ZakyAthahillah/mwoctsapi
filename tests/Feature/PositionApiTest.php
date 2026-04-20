@@ -14,9 +14,10 @@ class PositionApiTest extends TestCase
 
     public function test_authenticated_user_can_list_positions_with_pagination(): void
     {
-        $user = User::factory()->create();
-        Position::factory()->count(12)->create();
-        Position::factory()->deletedStatus()->create();
+        $area = Area::factory()->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
+        Position::factory()->forArea($area)->count(12)->create();
+        Position::factory()->forArea($area)->deletedStatus()->create();
 
         $token = auth('api')->login($user);
 
@@ -33,17 +34,34 @@ class PositionApiTest extends TestCase
         $this->assertCount(10, $response->json('data'));
     }
 
-    public function test_authenticated_user_can_filter_positions_by_area(): void
+    public function test_authenticated_user_can_list_position_active_with_status_not_equal_eleven(): void
     {
-        $user = User::factory()->create();
         $area = Area::factory()->create();
-        Position::factory()->forArea($area)->count(2)->create();
-        Position::factory()->count(3)->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
+        Position::factory()->forArea($area)->create(['name' => 'Posisi A', 'status' => 1]);
+        Position::factory()->forArea($area)->create(['name' => 'Posisi B', 'status' => 0]);
+        Position::factory()->forArea($area)->create(['name' => 'Posisi C', 'status' => 11]);
 
         $token = auth('api')->login($user);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
-            ->getJson('/api/positions?area_id='.$area->id);
+            ->getJson('/api/position_active');
+
+        $response->assertOk()
+            ->assertJsonPath('meta.total', 2);
+    }
+
+    public function test_authenticated_user_can_filter_positions_by_area(): void
+    {
+        $area = Area::factory()->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
+        Position::factory()->forArea($area)->count(2)->create();
+        Position::factory()->forArea(Area::factory()->create())->count(3)->create();
+
+        $token = auth('api')->login($user);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/positions');
 
         $response->assertOk()
             ->assertJsonPath('meta.total', 2);
@@ -51,10 +69,11 @@ class PositionApiTest extends TestCase
 
     public function test_authenticated_user_can_view_position_detail(): void
     {
-        $user = User::factory()->create();
         $position = Position::factory()->create([
+            'area_id' => $area = Area::factory()->create()->id,
             'name' => 'Posisi Alpha',
         ]);
+        $user = User::factory()->create(['area_id' => $area]);
 
         $token = auth('api')->login($user);
 
@@ -68,13 +87,12 @@ class PositionApiTest extends TestCase
 
     public function test_authenticated_user_can_create_position(): void
     {
-        $user = User::factory()->create();
         $area = Area::factory()->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
         $token = auth('api')->login($user);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/positions', [
-                'area_id' => $area->id,
                 'name' => 'Posisi A',
                 'description' => 'Deskripsi posisi',
                 'status' => 1,
@@ -186,5 +204,19 @@ class PositionApiTest extends TestCase
             ->assertJsonPath('success', false)
             ->assertJsonPath('message', 'Bad request')
             ->assertJsonPath('errors.request.0', 'Position has already been deleted.');
+    }
+
+    public function test_authenticated_user_can_toggle_position_status_between_ninety_nine_and_one(): void
+    {
+        $user = User::factory()->create();
+        $position = Position::factory()->deletedStatus()->create();
+        $token = auth('api')->login($user);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->putJson('/api/position_setstatus/'.$position->id);
+
+        $response->assertOk()
+            ->assertJsonPath('message', 'Position status updated successfully')
+            ->assertJsonPath('data.status', 1);
     }
 }

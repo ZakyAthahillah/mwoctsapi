@@ -13,18 +13,50 @@ use Illuminate\Support\Facades\DB;
 
 class ShiftController extends Controller
 {
-    public function index(Request $request)
+    public function shiftActive(Request $request)
     {
         try {
+            $user = auth('api')->user();
             $perPage = (int) $request->integer('per_page', 10);
             $perPage = max(1, min($perPage, 100));
             $search = trim((string) $request->query('search', ''));
-            $areaId = $request->query('area_id');
+
+            $shiftsQuery = Shift::query()
+                ->with('area')
+                ->where('status', '<>', 11)
+                ->when($user?->area_id !== null, fn ($query) => $query->where('area_id', $user->area_id), fn ($query) => $query->whereNull('area_id'))
+                ->when($search !== '', function ($query) use ($search) {
+                    $query->where('name', 'like', '%'.$search.'%');
+                })
+                ->orderBy('id', 'desc');
+
+            $shifts = $shiftsQuery->paginate($perPage)->appends($request->query());
+
+            return ApiResponseHelper::success('Data retrieved successfully', $shifts->getCollection()->map(
+                fn (Shift $shift) => ShiftDataHelper::transform($shift)
+            )->all(), [
+                'current_page' => $shifts->currentPage(),
+                'last_page' => $shifts->lastPage(),
+                'per_page' => $shifts->perPage(),
+                'total' => $shifts->total(),
+            ]);
+        } catch (\Throwable $exception) {
+            return ApiResponseHelper::error('Failed to retrieve active shifts');
+        }
+    }
+
+    public function index(Request $request)
+    {
+        try {
+            $user = auth('api')->user();
+            $perPage = (int) $request->integer('per_page', 10);
+            $perPage = max(1, min($perPage, 100));
+            $search = trim((string) $request->query('search', ''));
 
             $shiftsQuery = Shift::query()
                 ->with('area')
                 ->where('status', '<>', 99)
-                ->when($areaId !== null && $areaId !== '', fn ($query) => $query->where('area_id', $areaId))
+                ->when($user?->area_id !== null, fn ($query) => $query->where('area_id', $user->area_id), fn ($query) => $query->whereNull('area_id'))
                 ->when($search !== '', function ($query) use ($search) {
                     $query->where('name', 'like', '%'.$search.'%');
                 })
@@ -50,7 +82,7 @@ class ShiftController extends Controller
         try {
             $shift = DB::transaction(function () use ($request) {
                 return Shift::create([
-                    'area_id' => $request->input('area_id'),
+                    'area_id' => auth('api')->user()?->area_id,
                     'name' => $request->string('name')->toString(),
                     'time_start' => $request->input('time_start') !== null ? $request->input('time_start').':00' : null,
                     'time_finish' => $request->input('time_finish') !== null ? $request->input('time_finish').':00' : null,
@@ -69,7 +101,11 @@ class ShiftController extends Controller
     public function show(Shift $shift)
     {
         try {
+            $user = auth('api')->user();
             if ((int) $shift->status === 99) {
+                return ApiResponseHelper::error('Resource not found', null, 404);
+            }
+            if ((int) $shift->area_id !== (int) $user?->area_id) {
                 return ApiResponseHelper::error('Resource not found', null, 404);
             }
 
@@ -126,6 +162,27 @@ class ShiftController extends Controller
             return ApiResponseHelper::success('Shift deleted successfully', ShiftDataHelper::transform($shift));
         } catch (\Throwable $exception) {
             return ApiResponseHelper::error('Failed to delete shift');
+        }
+    }
+
+    public function shiftSetstatus(Shift $shift)
+    {
+        try {
+            if (! in_array((int) $shift->status, [1, 99], true)) {
+                return ApiResponseHelper::error('Bad request', [
+                    'status' => ['Shift status must be 1 or 99 to be toggled.'],
+                ], 400);
+            }
+
+            $shift->update([
+                'status' => (int) $shift->status === 99 ? 1 : 99,
+            ]);
+
+            $shift->refresh()->load('area');
+
+            return ApiResponseHelper::success('Shift status updated successfully', ShiftDataHelper::transform($shift));
+        } catch (\Throwable $exception) {
+            return ApiResponseHelper::error('Failed to update shift status');
         }
     }
 }

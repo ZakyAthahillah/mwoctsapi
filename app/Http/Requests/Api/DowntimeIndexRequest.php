@@ -13,7 +13,6 @@ class DowntimeIndexRequest extends BaseApiFormRequest
     {
         return [
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
-            'area_id' => ['nullable', 'integer', 'exists:areas,id'],
             'division_id' => ['nullable', 'integer', 'exists:divisions,id'],
             'machine_id' => ['nullable', 'integer', 'exists:machines,id'],
             'position_id' => ['nullable', 'integer', 'exists:positions,id'],

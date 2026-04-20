@@ -14,7 +14,6 @@ class JobIndexRequest extends BaseApiFormRequest
         return [
             'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
             'status' => ['sometimes', 'string', 'in:new,on_progress,onProgress,extend,waiting_for_approval,approval,finish'],
-            'area_id' => ['sometimes', 'integer'],
             'division_id' => ['sometimes', 'integer'],
             'machine_id' => ['sometimes', 'integer'],
             'position_id' => ['sometimes', 'integer'],

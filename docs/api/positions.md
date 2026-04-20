@@ -28,7 +28,17 @@ Query parameters:
 
 - `per_page` optional, default `10`, max `100`
 - `search` optional
-- `area_id` optional
+- area dibatasi otomatis berdasarkan `area_id` user yang login
+
+### GET `/api/position_active`
+
+Get paginated position data where `status != 11`.
+
+Query parameters:
+
+- `per_page` optional, default `10`, max `100`
+- `search` optional
+- area dibatasi otomatis berdasarkan `area_id` user yang login
 
 ### GET `/api/positions/{id}`
 
@@ -42,7 +52,6 @@ Request body:
 
 ```json
 {
-  "area_id": 1,
   "name": "Posisi A",
   "description": "Deskripsi posisi",
   "status": 1
@@ -57,8 +66,15 @@ Update a position.
 
 Delete a position logically by changing `status` to `99`.
 
+### PUT `/api/position_setstatus/{id}`
+
+Toggle position status between `99` and `1`.
+
 ## Notes
 
 - Active position queries exclude records with `status = 99`.
-- `area_id` and `description` may be `null`.
+- `GET /api/position_active` excludes records with `status = 11`.
+- `PUT /api/position_setstatus/{id}` only supports current status `1` and `99`.
+- `GET` dan `POST` menggunakan `area_id` dari user login.
+- `description` may be `null`.
 - Validation is required for create and update requests.

@@ -14,11 +14,8 @@ Use JWT bearer authentication.
 
 Get dashboard summary data.
 
-Query parameters:
-
-- `area_id` optional. If omitted, the authenticated user's `area_id` is used when available.
-
 ## Notes
 
 - Reporting status counts include `new`, `on_progress`, `extend`, `approval`, and `finish`.
 - The response also returns a default 30-day period range for dashboard display.
+- Summary dibatasi otomatis berdasarkan `area_id` user yang login.

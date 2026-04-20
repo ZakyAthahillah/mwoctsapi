@@ -14,9 +14,10 @@ class GroupApiTest extends TestCase
 
     public function test_authenticated_user_can_list_groups_with_pagination(): void
     {
-        $user = User::factory()->create();
-        Group::factory()->count(12)->create();
-        Group::factory()->deletedStatus()->create();
+        $area = Area::factory()->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
+        Group::factory()->forArea($area)->count(12)->create();
+        Group::factory()->forArea($area)->deletedStatus()->create();
 
         $token = auth('api')->login($user);
 
@@ -33,17 +34,34 @@ class GroupApiTest extends TestCase
         $this->assertCount(10, $response->json('data'));
     }
 
-    public function test_authenticated_user_can_filter_groups_by_area(): void
+    public function test_authenticated_user_can_list_group_active_with_status_not_equal_eleven(): void
     {
-        $user = User::factory()->create();
         $area = Area::factory()->create();
-        Group::factory()->forArea($area)->count(2)->create();
-        Group::factory()->count(3)->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
+        Group::factory()->forArea($area)->create(['name' => 'Group A', 'status' => 1]);
+        Group::factory()->forArea($area)->create(['name' => 'Group B', 'status' => 0]);
+        Group::factory()->forArea($area)->create(['name' => 'Group C', 'status' => 11]);
 
         $token = auth('api')->login($user);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
-            ->getJson('/api/groups?area_id='.$area->id);
+            ->getJson('/api/group_active');
+
+        $response->assertOk()
+            ->assertJsonPath('meta.total', 2);
+    }
+
+    public function test_authenticated_user_can_filter_groups_by_area(): void
+    {
+        $area = Area::factory()->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
+        Group::factory()->forArea($area)->count(2)->create();
+        Group::factory()->forArea(Area::factory()->create())->count(3)->create();
+
+        $token = auth('api')->login($user);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/groups');
 
         $response->assertOk()
             ->assertJsonPath('meta.total', 2);
@@ -51,10 +69,11 @@ class GroupApiTest extends TestCase
 
     public function test_authenticated_user_can_view_group_detail(): void
     {
-        $user = User::factory()->create();
         $group = Group::factory()->create([
+            'area_id' => $area = Area::factory()->create()->id,
             'name' => 'Group Alpha',
         ]);
+        $user = User::factory()->create(['area_id' => $area]);
 
         $token = auth('api')->login($user);
 
@@ -68,13 +87,12 @@ class GroupApiTest extends TestCase
 
     public function test_admin_can_create_group(): void
     {
-        $admin = User::factory()->admin()->create();
         $area = Area::factory()->create();
+        $admin = User::factory()->admin()->create(['area_id' => $area->id]);
         $token = auth('api')->login($admin);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/groups', [
-                'area_id' => $area->id,
                 'name' => 'Group Alpha',
                 'status' => 1,
             ]);
@@ -108,12 +126,12 @@ class GroupApiTest extends TestCase
 
     public function test_authenticated_user_can_create_group(): void
     {
-        $user = User::factory()->create();
+        $area = Area::factory()->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
         $token = auth('api')->login($user);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/groups', [
-                'area_id' => null,
                 'name' => 'Group Alpha',
                 'status' => 1,
             ]);
@@ -200,5 +218,19 @@ class GroupApiTest extends TestCase
             ->assertJsonPath('success', false)
             ->assertJsonPath('message', 'Bad request')
             ->assertJsonPath('errors.request.0', 'Group has already been deleted.');
+    }
+
+    public function test_authenticated_user_can_toggle_group_status_between_ninety_nine_and_one(): void
+    {
+        $user = User::factory()->create();
+        $group = Group::factory()->deletedStatus()->create();
+        $token = auth('api')->login($user);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->putJson('/api/group_setstatus/'.$group->id);
+
+        $response->assertOk()
+            ->assertJsonPath('message', 'Group status updated successfully')
+            ->assertJsonPath('data.status', 1);
     }
 }

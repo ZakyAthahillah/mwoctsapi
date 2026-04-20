@@ -19,8 +19,17 @@ class SerialNumberApiTest extends TestCase
 
     public function test_authenticated_user_can_list_serial_numbers_with_pagination(): void
     {
-        $user = User::factory()->create();
-        SerialNumber::factory()->count(12)->create();
+        $area = Area::factory()->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
+        $part = Part::factory()->forArea($area)->create();
+        $machine = Machine::factory()->forArea($area)->create();
+        $position = Position::factory()->forArea($area)->create();
+        SerialNumber::factory()->count(12)->create([
+            'area_id' => $area->id,
+            'machine_id' => $machine->id,
+            'position_id' => $position->id,
+            'part_id' => $part->id,
+        ]);
         $token = auth('api')->login($user);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
@@ -38,8 +47,8 @@ class SerialNumberApiTest extends TestCase
 
     public function test_authenticated_user_can_filter_serial_numbers_by_area(): void
     {
-        $user = User::factory()->create();
         $area = Area::factory()->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
         $part = Part::factory()->forArea($area)->create();
         $machine = Machine::factory()->forArea($area)->create();
         $position = Position::factory()->forArea($area)->create();
@@ -56,7 +65,7 @@ class SerialNumberApiTest extends TestCase
         $token = auth('api')->login($user);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
-            ->getJson('/api/serial-numbers?area_id='.$area->id);
+            ->getJson('/api/serial-numbers');
 
         $response->assertOk()
             ->assertJsonPath('meta.total', 1);
@@ -64,8 +73,17 @@ class SerialNumberApiTest extends TestCase
 
     public function test_authenticated_user_can_view_serial_number_detail(): void
     {
-        $user = User::factory()->create();
-        $serialNumber = SerialNumber::factory()->create();
+        $area = Area::factory()->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
+        $part = Part::factory()->forArea($area)->create();
+        $machine = Machine::factory()->forArea($area)->create();
+        $position = Position::factory()->forArea($area)->create();
+        $serialNumber = SerialNumber::factory()->create([
+            'area_id' => $area->id,
+            'machine_id' => $machine->id,
+            'position_id' => $position->id,
+            'part_id' => $part->id,
+        ]);
         $token = auth('api')->login($user);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
@@ -80,8 +98,8 @@ class SerialNumberApiTest extends TestCase
 
     public function test_authenticated_user_can_create_serial_number(): void
     {
-        $user = User::factory()->create();
         $area = Area::factory()->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
         $part = Part::factory()->forArea($area)->create();
         $machine = Machine::factory()->forArea($area)->create();
         $position = Position::factory()->forArea($area)->create();
@@ -90,7 +108,6 @@ class SerialNumberApiTest extends TestCase
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/serial-numbers', [
-                'area_id' => $area->id,
                 'machine_id' => $machine->id,
                 'position_id' => $position->id,
                 'part_id' => $part->id,
@@ -133,14 +150,14 @@ class SerialNumberApiTest extends TestCase
             ->assertJsonPath('success', false)
             ->assertJsonPath('message', 'Bad request')
             ->assertJsonStructure([
-                'errors' => ['area_id', 'machine_id', 'position_id', 'part_id', 'part_serial_number_id'],
+                'errors' => ['machine_id', 'position_id', 'part_id', 'part_serial_number_id'],
             ]);
     }
 
     public function test_create_serial_number_returns_error_when_serial_number_is_used_in_same_area(): void
     {
-        $user = User::factory()->create();
         $area = Area::factory()->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
         $part = Part::factory()->forArea($area)->create();
         $machineOne = Machine::factory()->forArea($area)->create();
         $machineTwo = Machine::factory()->forArea($area)->create();
@@ -160,7 +177,6 @@ class SerialNumberApiTest extends TestCase
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/serial-numbers', [
-                'area_id' => $area->id,
                 'machine_id' => $machineTwo->id,
                 'position_id' => $positionTwo->id,
                 'part_id' => $part->id,
@@ -175,8 +191,8 @@ class SerialNumberApiTest extends TestCase
 
     public function test_authenticated_user_can_update_serial_number(): void
     {
-        $user = User::factory()->create();
         $area = Area::factory()->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
         $part = Part::factory()->forArea($area)->create();
         $partSerialNumber = PartSerialNumber::factory()->forArea($area)->forPart($part)->create();
         $newPartSerialNumber = PartSerialNumber::factory()->forArea($area)->forPart($part)->create();
@@ -224,8 +240,8 @@ class SerialNumberApiTest extends TestCase
 
     public function test_authenticated_user_can_get_first_serial_number_data(): void
     {
-        $user = User::factory()->create();
         $area = Area::factory()->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
         $part = Part::factory()->forArea($area)->create();
         $machine = Machine::factory()->forArea($area)->create();
         $position = Position::factory()->forArea($area)->create();
@@ -258,8 +274,8 @@ class SerialNumberApiTest extends TestCase
 
     public function test_authenticated_user_can_update_first_serial_number_assignment(): void
     {
-        $user = User::factory()->create();
         $area = Area::factory()->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
         $part = Part::factory()->forArea($area)->create();
         $machine = Machine::factory()->forArea($area)->create();
         $position = Position::factory()->forArea($area)->create();
@@ -268,7 +284,6 @@ class SerialNumberApiTest extends TestCase
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->putJson('/api/serial-numbers/first/'.$partSerialNumber->id, [
-                'area_id' => $area->id,
                 'machine_id' => $machine->id,
                 'position_id' => $position->id,
             ]);
@@ -289,8 +304,8 @@ class SerialNumberApiTest extends TestCase
 
     public function test_update_first_returns_error_when_part_serial_number_is_inactive(): void
     {
-        $user = User::factory()->create();
         $area = Area::factory()->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
         $machine = Machine::factory()->forArea($area)->create();
         $position = Position::factory()->forArea($area)->create();
         $part = Part::factory()->forArea($area)->create();
@@ -299,7 +314,6 @@ class SerialNumberApiTest extends TestCase
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->putJson('/api/serial-numbers/first/'.$partSerialNumber->id, [
-                'area_id' => $area->id,
                 'machine_id' => $machine->id,
                 'position_id' => $position->id,
             ]);

@@ -20,17 +20,18 @@ class SerialNumberController extends Controller
     public function index(Request $request)
     {
         try {
+            $user = auth('api')->user();
             $perPage = (int) $request->integer('per_page', 10);
             $perPage = max(1, min($perPage, 100));
             $search = trim((string) $request->query('search', ''));
-            $areaId = $request->query('area_id');
+            $areaId = $user?->area_id;
             $machineId = $request->query('machine_id');
             $positionId = $request->query('position_id');
             $partId = $request->query('part_id');
 
             $serialNumbersQuery = SerialNumber::query()
                 ->with(['area', 'machine', 'position', 'part', 'partSerialNumber'])
-                ->when($areaId !== null && $areaId !== '', fn ($query) => $query->where('area_id', $areaId))
+                ->when($areaId !== null, fn ($query) => $query->where('area_id', $areaId), fn ($query) => $query->whereNull('area_id'))
                 ->when($machineId !== null && $machineId !== '', fn ($query) => $query->where('machine_id', $machineId))
                 ->when($positionId !== null && $positionId !== '', fn ($query) => $query->where('position_id', $positionId))
                 ->when($partId !== null && $partId !== '', fn ($query) => $query->where('part_id', $partId))
@@ -63,6 +64,7 @@ class SerialNumberController extends Controller
     {
         try {
             $user = auth('api')->user();
+            $areaId = $user?->area_id;
             $partSerialNumber = PartSerialNumber::query()->findOrFail($request->integer('part_serial_number_id'));
 
             if ($partSerialNumber->part_id !== $request->integer('part_id')) {
@@ -72,7 +74,7 @@ class SerialNumberController extends Controller
             }
 
             $duplicateSerialNumber = SerialNumber::query()
-                ->where('area_id', $request->integer('area_id'))
+                ->where('area_id', $areaId)
                 ->where('part_serial_number_id', $request->integer('part_serial_number_id'))
                 ->where('part_id', $request->integer('part_id'))
                 ->first();
@@ -84,7 +86,7 @@ class SerialNumberController extends Controller
             }
 
             $duplicateAssignment = SerialNumber::query()
-                ->where('area_id', $request->integer('area_id'))
+                ->where('area_id', $areaId)
                 ->where('machine_id', $request->integer('machine_id'))
                 ->where('position_id', $request->integer('position_id'))
                 ->where('part_id', $request->integer('part_id'))
@@ -96,9 +98,9 @@ class SerialNumberController extends Controller
                 ], 400);
             }
 
-            $serialNumber = DB::transaction(function () use ($request, $user) {
+            $serialNumber = DB::transaction(function () use ($request, $areaId, $user) {
                 $serialNumber = SerialNumber::create([
-                    'area_id' => $request->integer('area_id'),
+                    'area_id' => $areaId,
                     'machine_id' => $request->integer('machine_id'),
                     'position_id' => $request->integer('position_id'),
                     'part_id' => $request->integer('part_id'),
@@ -130,6 +132,10 @@ class SerialNumberController extends Controller
     public function show(SerialNumber $serialNumber)
     {
         try {
+            $user = auth('api')->user();
+            if ((int) $serialNumber->area_id !== (int) $user?->area_id) {
+                return ApiResponseHelper::error('Resource not found', null, 404);
+            }
             $serialNumber->load(['area', 'machine', 'position', 'part', 'partSerialNumber']);
 
             return ApiResponseHelper::success('Data retrieved successfully', SerialNumberDataHelper::transform($serialNumber));
@@ -212,6 +218,7 @@ class SerialNumberController extends Controller
     public function updateFirst(UpdateSerialNumberFirstRequest $request, PartSerialNumber $partSerialNumber)
     {
         try {
+            $areaId = auth('api')->user()?->area_id;
             if ((int) $partSerialNumber->status !== 1) {
                 return ApiResponseHelper::error('Bad request', [
                     'request' => ['Part serial number is not active and cannot be assigned.'],
@@ -221,7 +228,7 @@ class SerialNumberController extends Controller
             $user = auth('api')->user();
             $partSerialNumber->load(['part', 'area']);
 
-            if ($partSerialNumber->area_id !== null && $partSerialNumber->area_id !== $request->integer('area_id')) {
+            if ($partSerialNumber->area_id !== null && $partSerialNumber->area_id !== $areaId) {
                 return ApiResponseHelper::error('Bad request', [
                     'request' => ['Selected area does not match the part serial number area.'],
                 ], 400);
@@ -233,7 +240,7 @@ class SerialNumberController extends Controller
 
             if ($serialNumberLogNoFirst === null) {
                 $existingSerialNumber = SerialNumber::query()
-                    ->where('area_id', $request->integer('area_id'))
+                    ->where('area_id', $areaId)
                     ->where('machine_id', $request->integer('machine_id'))
                     ->where('position_id', $request->integer('position_id'))
                     ->where('part_id', $partSerialNumber->part_id)
@@ -250,11 +257,11 @@ class SerialNumberController extends Controller
                 ->where('action', 1)
                 ->first();
 
-            $result = DB::transaction(function () use ($request, $partSerialNumber, $partSerialNumberCreateLog, $serialNumberLogNoFirst, $user) {
+            $result = DB::transaction(function () use ($request, $partSerialNumber, $partSerialNumberCreateLog, $serialNumberLogNoFirst, $user, $areaId) {
                 $action = $partSerialNumberCreateLog !== null ? 2 : 1;
 
                 $log = SerialNumberLog::create([
-                    'area_id' => $request->integer('area_id'),
+                    'area_id' => $areaId,
                     'machine_id' => $request->integer('machine_id'),
                     'position_id' => $request->integer('position_id'),
                     'part_id' => $partSerialNumber->part_id,
@@ -266,7 +273,7 @@ class SerialNumberController extends Controller
 
                 if ($serialNumberLogNoFirst === null) {
                     SerialNumber::query()->updateOrCreate([
-                        'area_id' => $request->integer('area_id'),
+                        'area_id' => $areaId,
                         'machine_id' => $request->integer('machine_id'),
                         'position_id' => $request->integer('position_id'),
                         'part_id' => $partSerialNumber->part_id,

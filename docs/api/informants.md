@@ -24,7 +24,18 @@ Query parameters:
 
 - `per_page` optional, default `10`, max `100`
 - `search` optional
-- `area_id` optional
+- area dibatasi otomatis berdasarkan `area_id` user yang login
+- `group_id` optional
+
+### GET `/api/informant_active`
+
+Get paginated informant data where `status != 11`.
+
+Query parameters:
+
+- `per_page` optional, default `10`, max `100`
+- `search` optional
+- area dibatasi otomatis berdasarkan `area_id` user yang login
 - `group_id` optional
 
 ### GET `/api/informants/{id}`
@@ -39,7 +50,6 @@ Request body:
 
 ```json
 {
-  "area_id": 1,
   "code": "INF001",
   "name": "Pelapor A",
   "status": 1,
@@ -55,9 +65,16 @@ Update an informant.
 
 Delete an informant logically by changing `status` to `99`.
 
+### PUT `/api/informant_setstatus/{id}`
+
+Toggle informant status between `99` and `1`.
+
 ## Notes
 
 - Active informant queries exclude records with `status = 99`.
-- `area_id` and `group_id` may be `null`.
+- `GET /api/informant_active` excludes records with `status = 11`.
+- `PUT /api/informant_setstatus/{id}` only supports current status `1` and `99`.
+- `GET` dan `POST` menggunakan `area_id` dari user login.
+- `group_id` may be `null`.
 - Validation is required for create and update requests.
 - Forbidden requests return the standard API error format.

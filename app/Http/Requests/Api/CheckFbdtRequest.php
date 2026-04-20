@@ -12,7 +12,6 @@ class CheckFbdtRequest extends BaseApiFormRequest
     public function rules(): array
     {
         return [
-            'area_id' => ['required', 'integer', 'exists:areas,id'],
             'year' => ['required', 'integer', 'digits:4'],
         ];
     }

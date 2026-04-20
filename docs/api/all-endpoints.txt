@@ -45,6 +45,8 @@ PUT    /api/fbdts/{year}
 
 Areas
 -----
+GET    /api/areas_active
+PUT    /api/area_setstatus/{area}
 GET    /api/areas
 POST   /api/areas
 GET    /api/areas/{area}
@@ -53,6 +55,8 @@ DELETE /api/areas/{area}
 
 Divisions
 ---------
+GET    /api/division_active
+PUT    /api/division_setstatus/{division}
 GET    /api/divisions
 POST   /api/divisions
 GET    /api/divisions/{division}
@@ -61,6 +65,8 @@ DELETE /api/divisions/{division}
 
 Groups
 ------
+GET    /api/group_active
+PUT    /api/group_setstatus/{group}
 GET    /api/groups
 POST   /api/groups
 GET    /api/groups/{group}
@@ -69,6 +75,8 @@ DELETE /api/groups/{group}
 
 Informants
 ----------
+GET    /api/informant_active
+PUT    /api/informant_setstatus/{informant}
 GET    /api/informants
 POST   /api/informants
 GET    /api/informants/{informant}
@@ -77,14 +85,36 @@ DELETE /api/informants/{informant}
 
 Machines
 --------
+GET    /api/machine_active
+PUT    /api/machine_setstatus/{machine}
 GET    /api/machines
+GET    /api/machines/full-data-array
+GET    /api/machines/full-data-array-job
 POST   /api/machines
 GET    /api/machines/{machine}
+GET    /api/machines/{machine}/detail
+GET    /api/machines/{machine}/positions
+GET    /api/machines/{machineId}/positions/{positionId}/detail-job
+GET    /api/machines/{machineId}/positions/{positionId}/parts
+PUT    /api/machines/{machine}/activate
 PUT    /api/machines/{machine}
 DELETE /api/machines/{machine}
+GET    /api/machine/get-full-data-array
+POST   /api/machine/get-full-data-array
+GET    /api/machine/get-full-data-array-job
+POST   /api/machine/get-full-data-array-job
+GET    /api/machine/{machine}/get-detail
+GET    /api/machine/{machine}/get-position
+GET    /api/machine/{machineId}/{positionId}/get-part
+POST   /api/machine/{machineId}/{positionId}/get-part
+GET    /api/machine/{machineId}/{positionId}/get-detail-job
+PUT    /api/machine/{machine}/activate
+POST   /api/machine/{machine}/activate
 
 Operations
 ----------
+GET    /api/operation_active
+PUT    /api/operation_setstatus/{operation}
 GET    /api/operations
 POST   /api/operations
 GET    /api/operations/{operation}
@@ -93,6 +123,8 @@ DELETE /api/operations/{operation}
 
 Parts
 -----
+GET    /api/part_active
+PUT    /api/part_setstatus/{part}
 GET    /api/parts
 POST   /api/parts
 GET    /api/parts/{part}
@@ -101,6 +133,8 @@ DELETE /api/parts/{part}
 
 Positions
 ---------
+GET    /api/position_active
+PUT    /api/position_setstatus/{position}
 GET    /api/positions
 POST   /api/positions
 GET    /api/positions/{position}
@@ -109,6 +143,8 @@ DELETE /api/positions/{position}
 
 Reasons
 -------
+GET    /api/reason_active
+PUT    /api/reason_setstatus/{reason}
 GET    /api/reasons
 POST   /api/reasons
 GET    /api/reasons/{reason}
@@ -126,6 +162,8 @@ PUT    /api/serial-numbers/first/{partSerialNumber}
 
 Shifts
 ------
+GET    /api/shift_active
+PUT    /api/shift_setstatus/{shift}
 GET    /api/shifts
 POST   /api/shifts
 GET    /api/shifts/{shift}
@@ -134,6 +172,8 @@ DELETE /api/shifts/{shift}
 
 Technicians
 -----------
+GET    /api/technician_active
+PUT    /api/technician_setstatus/{technician}
 GET    /api/technicians
 POST   /api/technicians
 GET    /api/technicians/{technician}
@@ -150,6 +190,7 @@ DELETE /api/permissions/{permission}
 
 Users
 -----
+PUT    /api/user_setstatus/{user}
 PUT    /api/users/{user}
 DELETE /api/users/{user}
 
@@ -212,13 +253,18 @@ Documentation Files
 
 Positions Examples
 ------------------
+List position_active
+GET /api/position_active?per_page=10&search=posisi
+
+Toggle position status 99 <-> 1
+PUT /api/position_setstatus/{position}
+
 List positions
-GET /api/positions?per_page=10&search=posisi&area_id=1
+GET /api/positions?per_page=10&search=posisi
 
 Create position
 POST /api/positions
 {
-  "area_id": 1,
   "name": "Posisi A",
   "description": "Deskripsi posisi",
   "status": 1
@@ -280,6 +326,12 @@ POST /api/logout
 
 Areas Examples
 --------------
+List areas_active
+GET /api/areas_active?per_page=10&search=jakarta
+
+Toggle area status 99 <-> 1
+PUT /api/area_setstatus/{area}
+
 List areas
 GET /api/areas?per_page=10&search=jakarta
 
@@ -306,13 +358,18 @@ DELETE /api/areas/{area}
 
 Divisions Examples
 ------------------
+List division_active
+GET /api/division_active?per_page=10&search=divisi
+
+Toggle division status 99 <-> 1
+PUT /api/division_setstatus/{division}
+
 List divisions
-GET /api/divisions?per_page=10&search=divisi&area_id=1
+GET /api/divisions?per_page=10&search=divisi
 
 Create division
 POST /api/divisions
 {
-  "area_id": 1,
   "code": "DIV001",
   "name": "Divisi A",
   "status": 1
@@ -333,7 +390,7 @@ DELETE /api/divisions/{division}
 Downtimes Examples
 ------------------
 List downtimes
-GET /api/downtimes?per_page=10&area_id=1&period_start=2026-04-01&period_end=2026-04-30&machine_id=1&technician_id=1
+GET /api/downtimes?per_page=10&period_start=2026-04-01&period_end=2026-04-30&machine_id=1&technician_id=1
 
 Jobs Examples
 -------------
@@ -418,18 +475,17 @@ GET /api/mttr?type=shift&period_start=2026-04-01&period_end=2026-04-07
 FBDTs Examples
 --------------
 List FBDT years
-GET /api/fbdts?per_page=10&area_id=1
+GET /api/fbdts?per_page=10
 
 Check FBDT year
-GET /api/fbdts/check?area_id=1&year=2026
+GET /api/fbdts/check?year=2026
 
 Get FBDT detail
-GET /api/fbdts/2026?area_id=1
+GET /api/fbdts/2026
 
 Create FBDT
 POST /api/fbdts
 {
-  "area_id": 1,
   "year": 2026,
   "targets": [
     {
@@ -452,7 +508,6 @@ POST /api/fbdts
 Update FBDT
 PUT /api/fbdts/2026
 {
-  "area_id": 1,
   "targets": [
     {
       "month": 1,
@@ -466,13 +521,18 @@ PUT /api/fbdts/2026
 
 Groups Examples
 ---------------
+List group_active
+GET /api/group_active?per_page=10&search=group
+
+Toggle group status 99 <-> 1
+PUT /api/group_setstatus/{group}
+
 List groups
-GET /api/groups?per_page=10&search=group&area_id=1
+GET /api/groups?per_page=10&search=group
 
 Create group
 POST /api/groups
 {
-  "area_id": 1,
   "name": "Group A",
   "status": 1
 }
@@ -490,13 +550,18 @@ DELETE /api/groups/{group}
 
 Informants Examples
 -------------------
+List informant_active
+GET /api/informant_active?per_page=10&search=pelapor&group_id=1
+
+Toggle informant status 99 <-> 1
+PUT /api/informant_setstatus/{informant}
+
 List informants
-GET /api/informants?per_page=10&search=pelapor&area_id=1&group_id=1
+GET /api/informants?per_page=10&search=pelapor&group_id=1
 
 Create informant
 POST /api/informants
 {
-  "area_id": 1,
   "code": "INF001",
   "name": "Pelapor A",
   "status": 1,
@@ -518,13 +583,42 @@ DELETE /api/informants/{informant}
 
 Machines Examples
 -----------------
+List machine_active
+GET /api/machine_active?per_page=10&search=mesin
+
+Toggle machine status 99 <-> 1
+PUT /api/machine_setstatus/{machine}
+
 List machines
-GET /api/machines?per_page=10&search=mesin&area_id=1
+GET /api/machines?per_page=10&search=mesin
+
+List machine options for legacy selector
+GET /api/machines/full-data-array?term=mesin
+
+List active machine options for job selector
+GET /api/machines/full-data-array-job?term=mesin
+
+Get machine detail with mapped parts
+GET /api/machines/{machine}/detail
+
+Get machine positions
+GET /api/machines/{machine}/positions?term=front&selected=2
+
+Get machine job detail for a position
+GET /api/machines/{machineId}/positions/{positionId}/detail-job
+
+Get machine parts for a position
+GET /api/machines/{machineId}/positions/{positionId}/parts
+
+Activate or deactivate completed machine
+PUT /api/machines/{machine}/activate
+{
+  "Authorization": "Bearer <your_jwt_token>"
+}
 
 Create machine
 POST /api/machines
 {
-  "area_id": 1,
   "code": "MCH001",
   "name": "Mesin Potong",
   "description": "Mesin untuk proses potong",
@@ -545,7 +639,6 @@ Accept: application/json
 Content-Type: multipart/form-data
 
 Form fields:
-area_id=1
 code=MCH001
 name=Mesin Potong
 description=Mesin untuk proses potong
@@ -572,15 +665,29 @@ PUT /api/machines/{machine}
 Delete machine
 DELETE /api/machines/{machine}
 
+Legacy compatibility examples
+GET /api/machine/get-full-data-array?term=mesin
+GET /api/machine/get-full-data-array-job?term=mesin
+GET /api/machine/{machine}/get-detail
+GET /api/machine/{machine}/get-position?term=front&selected=2
+GET /api/machine/{machineId}/{positionId}/get-part
+GET /api/machine/{machineId}/{positionId}/get-detail-job
+PUT /api/machine/{machine}/activate
+
 Operations Examples
 -------------------
+List operation_active
+GET /api/operation_active?per_page=10&search=kerja
+
+Toggle operation status 99 <-> 1
+PUT /api/operation_setstatus/{operation}
+
 List operations
-GET /api/operations?per_page=10&search=kerja&area_id=1
+GET /api/operations?per_page=10&search=kerja
 
 Create operation
 POST /api/operations
 {
-  "area_id": 1,
   "code": "OPR001",
   "name": "Pekerjaan A",
   "status": 1
@@ -600,13 +707,18 @@ DELETE /api/operations/{operation}
 
 Parts Examples
 --------------
+List part_active
+GET /api/part_active?per_page=10&search=part
+
+Toggle part status 99 <-> 1
+PUT /api/part_setstatus/{part}
+
 List parts
-GET /api/parts?per_page=10&search=part&area_id=1
+GET /api/parts?per_page=10&search=part
 
 Create part
 POST /api/parts
 {
-  "area_id": 1,
   "code": "PRT001",
   "name": "Part A",
   "description": "Deskripsi part",
@@ -628,13 +740,18 @@ DELETE /api/parts/{part}
 
 Reasons Examples
 ----------------
+List reason_active
+GET /api/reason_active?per_page=10&search=alasan&division_id=1
+
+Toggle reason status 99 <-> 1
+PUT /api/reason_setstatus/{reason}
+
 List reasons
-GET /api/reasons?per_page=10&search=alasan&area_id=1&division_id=1
+GET /api/reasons?per_page=10&search=alasan&division_id=1
 
 Create reason
 POST /api/reasons
 {
-  "area_id": 1,
   "code": "RSN001",
   "name": "Alasan A",
   "division_id": 1,
@@ -657,12 +774,11 @@ DELETE /api/reasons/{reason}
 Serial Numbers Examples
 -----------------------
 List serial numbers
-GET /api/serial-numbers?per_page=10&search=SN001&area_id=1&machine_id=1&position_id=1&part_id=1
+GET /api/serial-numbers?per_page=10&search=SN001&machine_id=1&position_id=1&part_id=1
 
 Create serial number
 POST /api/serial-numbers
 {
-  "area_id": 1,
   "machine_id": 1,
   "position_id": 1,
   "part_id": 1,
@@ -681,20 +797,24 @@ GET /api/serial-numbers/first/{partSerialNumber}
 Update first serial number assignment
 PUT /api/serial-numbers/first/{partSerialNumber}
 {
-  "area_id": 1,
   "machine_id": 1,
   "position_id": 1
 }
 
 Shifts Examples
 ---------------
+List shift_active
+GET /api/shift_active?per_page=10&search=shift
+
+Toggle shift status 99 <-> 1
+PUT /api/shift_setstatus/{shift}
+
 List shifts
-GET /api/shifts?per_page=10&search=shift&area_id=1
+GET /api/shifts?per_page=10&search=shift
 
 Create shift
 POST /api/shifts
 {
-  "area_id": 1,
   "name": "Shift Pagi",
   "time_start": "08:00",
   "time_finish": "16:00",
@@ -716,13 +836,18 @@ DELETE /api/shifts/{shift}
 
 Technicians Examples
 --------------------
+List technician_active
+GET /api/technician_active?per_page=10&search=teknisi&division_id=1&group_id=1
+
+Toggle technician status 99 <-> 1
+PUT /api/technician_setstatus/{technician}
+
 List technicians
-GET /api/technicians?per_page=10&search=teknisi&area_id=1&division_id=1&group_id=1
+GET /api/technicians?per_page=10&search=teknisi&division_id=1&group_id=1
 
 Create technician
 POST /api/technicians
 {
-  "area_id": 1,
   "code": "TCN001",
   "name": "Teknisi A",
   "division_id": 1,
@@ -746,6 +871,9 @@ DELETE /api/technicians/{technician}
 
 Users Examples
 --------------
+Toggle user status 99 <-> 1
+PUT /api/user_setstatus/{user}
+
 Update user
 PUT /api/users/{user}
 {

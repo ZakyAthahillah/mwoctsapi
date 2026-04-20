@@ -152,4 +152,35 @@ class UserManagementApiTest extends TestCase
             ->assertJsonPath('success', false)
             ->assertJsonPath('message', 'Resource not found');
     }
+
+    public function test_admin_can_toggle_user_status_between_ninety_nine_and_one(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $targetUser = User::factory()->create([
+            'status' => 99,
+        ]);
+        $token = auth('api')->login($admin);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->putJson('/api/user_setstatus/'.$targetUser->id);
+
+        $response->assertOk()
+            ->assertJsonPath('message', 'User status updated successfully')
+            ->assertJsonPath('data.status', 1);
+    }
+
+    public function test_admin_cannot_deactivate_their_own_account_from_setstatus_endpoint(): void
+    {
+        $admin = User::factory()->admin()->create([
+            'status' => 1,
+        ]);
+        $token = auth('api')->login($admin);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->putJson('/api/user_setstatus/'.$admin->id);
+
+        $response->assertStatus(400)
+            ->assertJsonPath('message', 'Bad request')
+            ->assertJsonPath('errors.user.0', 'Admin cannot deactivate their own account through this endpoint.');
+    }
 }

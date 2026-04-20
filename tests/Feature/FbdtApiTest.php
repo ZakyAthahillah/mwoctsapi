@@ -58,12 +58,11 @@ class FbdtApiTest extends TestCase
     public function test_authenticated_user_can_create_fbdt_data(): void
     {
         $area = Area::factory()->create();
-        $user = User::factory()->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
         $token = auth('api')->login($user);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/fbdts', [
-                'area_id' => $area->id,
                 'year' => 2026,
                 'targets' => [
                     ['month' => 1, 'fb' => 10, 'dt' => 20, 'mtbf' => 30, 'mttr' => 40],
@@ -95,21 +94,20 @@ class FbdtApiTest extends TestCase
             ->assertJsonPath('success', false)
             ->assertJsonPath('message', 'Bad request')
             ->assertJsonStructure([
-                'errors' => ['area_id', 'year', 'targets'],
+                'errors' => ['year', 'targets'],
             ]);
     }
 
     public function test_authenticated_user_can_update_fbdt_data(): void
     {
         $area = Area::factory()->create();
-        $user = User::factory()->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
         Fbdt::factory()->create(['area_id' => $area->id, 'tahun' => 2026, 'bulan' => 1, 'fb' => 10]);
 
         $token = auth('api')->login($user);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->putJson('/api/fbdts/2026', [
-                'area_id' => $area->id,
                 'targets' => [
                     ['month' => 1, 'fb' => 15, 'dt' => 25, 'mtbf' => 35, 'mttr' => 45],
                 ],
@@ -123,13 +121,13 @@ class FbdtApiTest extends TestCase
     public function test_authenticated_user_can_check_fbdt_year_existence(): void
     {
         $area = Area::factory()->create();
-        $user = User::factory()->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
         Fbdt::factory()->create(['area_id' => $area->id, 'tahun' => 2026, 'bulan' => 1]);
 
         $token = auth('api')->login($user);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
-            ->getJson('/api/fbdts/check?area_id='.$area->id.'&year=2026');
+            ->getJson('/api/fbdts/check?year=2026');
 
         $response->assertOk()
             ->assertJsonPath('success', true)

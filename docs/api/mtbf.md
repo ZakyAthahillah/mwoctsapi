@@ -21,7 +21,6 @@ Gunakan JWT bearer token.
 Query parameters umum:
 
 - `type` required: `yearly`, `monthly`, `daily`, `shift`
-- `area_id` optional
 - `machine_id` optional
 - `position_id` optional
 - `part_id` optional
@@ -51,10 +50,12 @@ Ambil rekap MTBF taskplus per bulan untuk satu tahun.
 Query parameters:
 
 - `year` required
-- `area_id` optional
 
 Contoh:
 
 ```text
 GET /api/mtbf/taskplus?year=2026
 ```
+
+Catatan:
+- Area dibatasi otomatis berdasarkan `area_id` user yang login.

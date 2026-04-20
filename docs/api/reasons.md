@@ -28,7 +28,18 @@ Query parameters:
 
 - `per_page` optional, default `10`, max `100`
 - `search` optional
-- `area_id` optional
+- area dibatasi otomatis berdasarkan `area_id` user yang login
+- `division_id` optional
+
+### GET `/api/reason_active`
+
+Get paginated reason data where `status != 11`.
+
+Query parameters:
+
+- `per_page` optional, default `10`, max `100`
+- `search` optional
+- area dibatasi otomatis berdasarkan `area_id` user yang login
 - `division_id` optional
 
 ### GET `/api/reasons/{id}`
@@ -43,7 +54,6 @@ Request body:
 
 ```json
 {
-  "area_id": 1,
   "code": "RSN001",
   "name": "Alasan A",
   "division_id": 1,
@@ -59,8 +69,15 @@ Update a reason.
 
 Delete a reason logically by changing `status` to `99`.
 
+### PUT `/api/reason_setstatus/{id}`
+
+Toggle reason status between `99` and `1`.
+
 ## Notes
 
 - Active reason queries exclude records with `status = 99`.
-- `area_id` and `division_id` may be `null`.
+- `GET /api/reason_active` excludes records with `status = 11`.
+- `PUT /api/reason_setstatus/{id}` only supports current status `1` and `99`.
+- `GET` dan `POST` menggunakan `area_id` dari user login.
+- `division_id` may be `null`.
 - Validation is required for create and update requests.

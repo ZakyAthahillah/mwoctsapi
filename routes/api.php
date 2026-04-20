@@ -61,6 +61,8 @@ Route::middleware('auth:api')->group(function () {
     Route::put('/fbdts/{year}', [FbdtController::class, 'update']);
 
     // Area routes
+    Route::get('/areas_active', [AreaController::class, 'areaActive']);
+    Route::put('/area_setstatus/{area}', [AreaController::class, 'areaSetstatus']);
     Route::get('/areas', [AreaController::class, 'index']);
     Route::get('/areas/{area}', [AreaController::class, 'show']);
     Route::post('/areas', [AreaController::class, 'store']);
@@ -68,6 +70,8 @@ Route::middleware('auth:api')->group(function () {
     Route::delete('/areas/{area}', [AreaController::class, 'destroy']);
 
     // Division routes
+    Route::get('/division_active', [DivisionController::class, 'divisionActive']);
+    Route::put('/division_setstatus/{division}', [DivisionController::class, 'divisionSetstatus']);
     Route::get('/divisions', [DivisionController::class, 'index']);
     Route::get('/divisions/{division}', [DivisionController::class, 'show']);
     Route::post('/divisions', [DivisionController::class, 'store']);
@@ -75,6 +79,8 @@ Route::middleware('auth:api')->group(function () {
     Route::delete('/divisions/{division}', [DivisionController::class, 'destroy']);
 
     // Informant routes
+    Route::get('/informant_active', [InformantController::class, 'informantActive']);
+    Route::put('/informant_setstatus/{informant}', [InformantController::class, 'informantSetstatus']);
     Route::get('/informants', [InformantController::class, 'index']);
     Route::get('/informants/{informant}', [InformantController::class, 'show']);
     Route::post('/informants', [InformantController::class, 'store']);
@@ -82,13 +88,33 @@ Route::middleware('auth:api')->group(function () {
     Route::delete('/informants/{informant}', [InformantController::class, 'destroy']);
 
     // Machine routes
+    Route::get('/machine_active', [MachineController::class, 'machineActive']);
+    Route::put('/machine_setstatus/{machine}', [MachineController::class, 'machineSetstatus']);
+    Route::get('/machines/full-data-array', [MachineController::class, 'getFullDataArray']);
+    Route::get('/machines/full-data-array-job', [MachineController::class, 'getFullDataArrayJob']);
+    Route::get('/machines/{machine}/detail', [MachineController::class, 'getDetail']);
+    Route::get('/machines/{machine}/positions', [MachineController::class, 'getPosition']);
+    Route::get('/machines/{machineId}/positions/{positionId}/detail-job', [MachineController::class, 'getDetailJob']);
+    Route::get('/machines/{machineId}/positions/{positionId}/parts', [MachineController::class, 'getPart']);
+    Route::put('/machines/{machine}/activate', [MachineController::class, 'activate']);
     Route::get('/machines', [MachineController::class, 'index']);
     Route::get('/machines/{machine}', [MachineController::class, 'show']);
     Route::post('/machines', [MachineController::class, 'store']);
     Route::put('/machines/{machine}', [MachineController::class, 'update']);
     Route::delete('/machines/{machine}', [MachineController::class, 'destroy']);
 
+    // Legacy machine compatibility routes
+    Route::match(['get', 'post'], '/machine/get-full-data-array', [MachineController::class, 'getFullDataArray']);
+    Route::match(['get', 'post'], '/machine/get-full-data-array-job', [MachineController::class, 'getFullDataArrayJob']);
+    Route::get('/machine/{machine}/get-detail', [MachineController::class, 'getDetail']);
+    Route::get('/machine/{machine}/get-position', [MachineController::class, 'getPosition']);
+    Route::match(['get', 'post'], '/machine/{machineId}/{positionId}/get-part', [MachineController::class, 'getPart']);
+    Route::get('/machine/{machineId}/{positionId}/get-detail-job', [MachineController::class, 'getDetailJob']);
+    Route::match(['put', 'post'], '/machine/{machine}/activate', [MachineController::class, 'activate']);
+
     // Operation routes
+    Route::get('/operation_active', [OperationController::class, 'operationActive']);
+    Route::put('/operation_setstatus/{operation}', [OperationController::class, 'operationSetstatus']);
     Route::get('/operations', [OperationController::class, 'index']);
     Route::get('/operations/{operation}', [OperationController::class, 'show']);
     Route::post('/operations', [OperationController::class, 'store']);
@@ -96,6 +122,8 @@ Route::middleware('auth:api')->group(function () {
     Route::delete('/operations/{operation}', [OperationController::class, 'destroy']);
 
     // Part routes
+    Route::get('/part_active', [PartController::class, 'partActive']);
+    Route::put('/part_setstatus/{part}', [PartController::class, 'partSetstatus']);
     Route::get('/parts', [PartController::class, 'index']);
     Route::get('/parts/{part}', [PartController::class, 'show']);
     Route::post('/parts', [PartController::class, 'store']);
@@ -103,6 +131,8 @@ Route::middleware('auth:api')->group(function () {
     Route::delete('/parts/{part}', [PartController::class, 'destroy']);
 
     // Position routes
+    Route::get('/position_active', [PositionController::class, 'positionActive']);
+    Route::put('/position_setstatus/{position}', [PositionController::class, 'positionSetstatus']);
     Route::get('/positions', [PositionController::class, 'index']);
     Route::get('/positions/{position}', [PositionController::class, 'show']);
     Route::post('/positions', [PositionController::class, 'store']);
@@ -110,6 +140,8 @@ Route::middleware('auth:api')->group(function () {
     Route::delete('/positions/{position}', [PositionController::class, 'destroy']);
 
     // Reason routes
+    Route::get('/reason_active', [ReasonController::class, 'reasonActive']);
+    Route::put('/reason_setstatus/{reason}', [ReasonController::class, 'reasonSetstatus']);
     Route::get('/reasons', [ReasonController::class, 'index']);
     Route::get('/reasons/{reason}', [ReasonController::class, 'show']);
     Route::post('/reasons', [ReasonController::class, 'store']);
@@ -125,6 +157,8 @@ Route::middleware('auth:api')->group(function () {
     Route::put('/serial-numbers/first/{partSerialNumber}', [SerialNumberController::class, 'updateFirst']);
 
     // Shift routes
+    Route::get('/shift_active', [ShiftController::class, 'shiftActive']);
+    Route::put('/shift_setstatus/{shift}', [ShiftController::class, 'shiftSetstatus']);
     Route::get('/shifts', [ShiftController::class, 'index']);
     Route::get('/shifts/{shift}', [ShiftController::class, 'show']);
     Route::post('/shifts', [ShiftController::class, 'store']);
@@ -132,6 +166,8 @@ Route::middleware('auth:api')->group(function () {
     Route::delete('/shifts/{shift}', [ShiftController::class, 'destroy']);
 
     // Technician routes
+    Route::get('/technician_active', [TechnicianController::class, 'technicianActive']);
+    Route::put('/technician_setstatus/{technician}', [TechnicianController::class, 'technicianSetstatus']);
     Route::get('/technicians', [TechnicianController::class, 'index']);
     Route::get('/technicians/{technician}', [TechnicianController::class, 'show']);
     Route::post('/technicians', [TechnicianController::class, 'store']);
@@ -139,6 +175,8 @@ Route::middleware('auth:api')->group(function () {
     Route::delete('/technicians/{technician}', [TechnicianController::class, 'destroy']);
 
     // Group routes
+    Route::get('/group_active', [GroupController::class, 'groupActive']);
+    Route::put('/group_setstatus/{group}', [GroupController::class, 'groupSetstatus']);
     Route::get('/groups', [GroupController::class, 'index']);
     Route::get('/groups/{group}', [GroupController::class, 'show']);
     Route::post('/groups', [GroupController::class, 'store']);
@@ -154,6 +192,7 @@ Route::middleware('auth:api')->group(function () {
         Route::delete('/permissions/{permission}', [PermissionsController::class, 'destroy']);
 
         Route::put('/users/{user}', [UserController::class, 'update']);
+        Route::put('/user_setstatus/{user}', [UserController::class, 'userSetstatus']);
         Route::delete('/users/{user}', [UserController::class, 'destroy']);
     });
 });

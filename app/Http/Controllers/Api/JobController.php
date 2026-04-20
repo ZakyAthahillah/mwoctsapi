@@ -23,10 +23,7 @@ class JobController extends Controller
             $perPage = (int) $request->integer('per_page', 10);
             $perPage = max(1, min($perPage, 100));
 
-            $areaId = $request->input('area_id');
-            if (($areaId === null || $areaId === '') && $user?->area_id !== null) {
-                $areaId = $user->area_id;
-            }
+            $areaId = $user?->area_id;
 
             $statusCode = JobWorkflowHelper::statusCodeFromFilter($request->input('status'));
             if ($request->filled('status') && $statusCode === null) {
@@ -70,7 +67,7 @@ class JobController extends Controller
                     'groups.name as group_name',
                 ])
                 ->where('reportings.status', '<>', 99)
-                ->when($areaId !== null && $areaId !== '', fn ($query) => $query->where('reportings.area_id', $areaId))
+                ->when($areaId !== null, fn ($query) => $query->where('reportings.area_id', $areaId), fn ($query) => $query->whereNull('reportings.area_id'))
                 ->when($statusCode !== null, fn ($query) => $query->where('reportings.status', $statusCode))
                 ->when($request->filled('division_id'), fn ($query) => $query->where('reportings.division_id', $request->integer('division_id')))
                 ->when($request->filled('machine_id'), fn ($query) => $query->where('reportings.machine_id', $request->integer('machine_id')))
@@ -136,6 +133,7 @@ class JobController extends Controller
     public function show(int $job)
     {
         try {
+            $user = auth('api')->user();
             $row = DB::table('reportings')
                 ->leftJoin('divisions', 'divisions.id', '=', 'reportings.division_id')
                 ->leftJoin('shifts as shift_reporting', 'shift_reporting.id', '=', 'reportings.shift_id_reporting')
@@ -154,6 +152,7 @@ class JobController extends Controller
                 ->leftJoin('part_serial_numbers', 'part_serial_numbers.id', '=', 'reportings.part_serial_number_id')
                 ->where('reportings.id', $job)
                 ->where('reportings.status', '<>', 99)
+                ->when($user?->area_id !== null, fn ($query) => $query->where('reportings.area_id', $user->area_id), fn ($query) => $query->whereNull('reportings.area_id'))
                 ->select([
                     'reportings.*',
                     'divisions.name as division_name',

@@ -16,9 +16,12 @@ class TechnicianApiTest extends TestCase
 
     public function test_authenticated_user_can_list_technicians_with_pagination(): void
     {
-        $user = User::factory()->create();
-        Technician::factory()->count(12)->create();
-        Technician::factory()->deletedStatus()->create();
+        $area = Area::factory()->create();
+        $division = \App\Models\Division::factory()->forArea($area)->create();
+        $group = Group::factory()->forArea($area)->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
+        Technician::factory()->forArea($area)->count(12)->create(['division_id' => $division->id, 'group_id' => $group->id]);
+        Technician::factory()->forArea($area)->deletedStatus()->create(['division_id' => $division->id, 'group_id' => $group->id]);
 
         $token = auth('api')->login($user);
 
@@ -35,17 +38,38 @@ class TechnicianApiTest extends TestCase
         $this->assertCount(10, $response->json('data'));
     }
 
+    public function test_authenticated_user_can_list_technician_active_with_status_not_equal_eleven(): void
+    {
+        $area = Area::factory()->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
+        $division = \App\Models\Division::factory()->forArea($area)->create();
+        $group = \App\Models\Group::factory()->forArea($area)->create();
+        Technician::factory()->forArea($area)->create(['division_id' => $division->id, 'group_id' => $group->id, 'code' => 'TCN001', 'status' => 1]);
+        Technician::factory()->forArea($area)->create(['division_id' => $division->id, 'group_id' => $group->id, 'code' => 'TCN002', 'status' => 0]);
+        Technician::factory()->forArea($area)->create(['division_id' => $division->id, 'group_id' => $group->id, 'code' => 'TCN011', 'status' => 11]);
+
+        $token = auth('api')->login($user);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/technician_active?division_id='.$division->id.'&group_id='.$group->id);
+
+        $response->assertOk()
+            ->assertJsonPath('meta.total', 2);
+    }
+
     public function test_authenticated_user_can_filter_technicians_by_area(): void
     {
-        $user = User::factory()->create();
         $area = Area::factory()->create();
-        Technician::factory()->forArea($area)->count(2)->create();
+        $division = \App\Models\Division::factory()->forArea($area)->create();
+        $group = Group::factory()->forArea($area)->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
+        Technician::factory()->forArea($area)->count(2)->create(['division_id' => $division->id, 'group_id' => $group->id]);
         Technician::factory()->count(3)->create();
 
         $token = auth('api')->login($user);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
-            ->getJson('/api/technicians?area_id='.$area->id);
+            ->getJson('/api/technicians');
 
         $response->assertOk()
             ->assertJsonPath('meta.total', 2);
@@ -53,10 +77,10 @@ class TechnicianApiTest extends TestCase
 
     public function test_authenticated_user_can_view_technician_detail(): void
     {
-        $user = User::factory()->create();
         $area = Area::factory()->create([
             'name' => 'Area Teknisi',
         ]);
+        $user = User::factory()->create(['area_id' => $area->id]);
         $group = Group::factory()->forArea($area)->create([
             'name' => 'Group Teknisi',
         ]);
@@ -90,8 +114,8 @@ class TechnicianApiTest extends TestCase
 
     public function test_admin_can_create_technician(): void
     {
-        $admin = User::factory()->admin()->create();
         $area = Area::factory()->create();
+        $admin = User::factory()->admin()->create(['area_id' => $area->id]);
         $divisionId = DB::table('divisions')->insertGetId([
             'area_id' => $area->id,
             'code' => 'DIV001',
@@ -104,7 +128,6 @@ class TechnicianApiTest extends TestCase
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/technicians', [
-                'area_id' => $area->id,
                 'code' => 'TCN001',
                 'name' => 'Teknisi A',
                 'division_id' => $divisionId,
@@ -143,12 +166,12 @@ class TechnicianApiTest extends TestCase
 
     public function test_authenticated_user_can_create_technician(): void
     {
-        $user = User::factory()->create();
+        $area = Area::factory()->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
         $token = auth('api')->login($user);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/technicians', [
-                'area_id' => null,
                 'code' => 'TCN001',
                 'name' => 'Teknisi A',
                 'division_id' => null,
@@ -252,5 +275,19 @@ class TechnicianApiTest extends TestCase
             ->assertJsonPath('success', false)
             ->assertJsonPath('message', 'Bad request')
             ->assertJsonPath('errors.request.0', 'Technician has already been deleted.');
+    }
+
+    public function test_authenticated_user_can_toggle_technician_status_between_ninety_nine_and_one(): void
+    {
+        $user = User::factory()->create();
+        $technician = Technician::factory()->deletedStatus()->create();
+        $token = auth('api')->login($user);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->putJson('/api/technician_setstatus/'.$technician->id);
+
+        $response->assertOk()
+            ->assertJsonPath('message', 'Technician status updated successfully')
+            ->assertJsonPath('data.status', 1);
     }
 }

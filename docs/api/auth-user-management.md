@@ -186,6 +186,17 @@ Notes:
 
 - Admin cannot delete their own account using this endpoint.
 
+### PUT `/api/user_setstatus/{id}`
+
+Toggle user status between `99` and `1`. This endpoint is restricted to admin users.
+
+Protected endpoint: `auth:api`, `admin`
+
+Notes:
+
+- Endpoint only supports current status `1` and `99`.
+- Admin cannot deactivate their own account using this endpoint.
+
 ## Standard Error Response
 
 Validation error example:

@@ -14,9 +14,10 @@ class OperationApiTest extends TestCase
 
     public function test_authenticated_user_can_list_operations_with_pagination(): void
     {
-        $user = User::factory()->create();
-        Operation::factory()->count(12)->create();
-        Operation::factory()->deletedStatus()->create();
+        $area = Area::factory()->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
+        Operation::factory()->forArea($area)->count(12)->create();
+        Operation::factory()->forArea($area)->deletedStatus()->create();
 
         $token = auth('api')->login($user);
 
@@ -33,17 +34,34 @@ class OperationApiTest extends TestCase
         $this->assertCount(10, $response->json('data'));
     }
 
-    public function test_authenticated_user_can_filter_operations_by_area(): void
+    public function test_authenticated_user_can_list_operation_active_with_status_not_equal_eleven(): void
     {
-        $user = User::factory()->create();
         $area = Area::factory()->create();
-        Operation::factory()->forArea($area)->count(2)->create();
-        Operation::factory()->count(3)->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
+        Operation::factory()->forArea($area)->create(['code' => 'OPR001', 'status' => 1]);
+        Operation::factory()->forArea($area)->create(['code' => 'OPR002', 'status' => 0]);
+        Operation::factory()->forArea($area)->create(['code' => 'OPR011', 'status' => 11]);
 
         $token = auth('api')->login($user);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
-            ->getJson('/api/operations?area_id='.$area->id);
+            ->getJson('/api/operation_active');
+
+        $response->assertOk()
+            ->assertJsonPath('meta.total', 2);
+    }
+
+    public function test_authenticated_user_can_filter_operations_by_area(): void
+    {
+        $area = Area::factory()->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
+        Operation::factory()->forArea($area)->count(2)->create();
+        Operation::factory()->forArea(Area::factory()->create())->count(3)->create();
+
+        $token = auth('api')->login($user);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/operations');
 
         $response->assertOk()
             ->assertJsonPath('meta.total', 2);
@@ -51,10 +69,11 @@ class OperationApiTest extends TestCase
 
     public function test_authenticated_user_can_view_operation_detail(): void
     {
-        $user = User::factory()->create();
         $operation = Operation::factory()->create([
+            'area_id' => $area = Area::factory()->create()->id,
             'code' => 'OPR001',
         ]);
+        $user = User::factory()->create(['area_id' => $area]);
 
         $token = auth('api')->login($user);
 
@@ -68,13 +87,12 @@ class OperationApiTest extends TestCase
 
     public function test_authenticated_user_can_create_operation(): void
     {
-        $user = User::factory()->create();
         $area = Area::factory()->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
         $token = auth('api')->login($user);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/operations', [
-                'area_id' => $area->id,
                 'code' => 'OPR001',
                 'name' => 'Pekerjaan A',
                 'status' => 1,
@@ -187,5 +205,19 @@ class OperationApiTest extends TestCase
             ->assertJsonPath('success', false)
             ->assertJsonPath('message', 'Bad request')
             ->assertJsonPath('errors.request.0', 'Operation has already been deleted.');
+    }
+
+    public function test_authenticated_user_can_toggle_operation_status_between_ninety_nine_and_one(): void
+    {
+        $user = User::factory()->create();
+        $operation = Operation::factory()->deletedStatus()->create();
+        $token = auth('api')->login($user);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->putJson('/api/operation_setstatus/'.$operation->id);
+
+        $response->assertOk()
+            ->assertJsonPath('message', 'Operation status updated successfully')
+            ->assertJsonPath('data.status', 1);
     }
 }

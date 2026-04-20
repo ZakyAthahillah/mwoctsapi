@@ -17,7 +17,6 @@ Get paginated downtime report data.
 Query parameters:
 
 - `per_page` optional, default `10`, max `100`
-- `area_id` optional
 - `division_id` optional
 - `machine_id` optional
 - `position_id` optional
@@ -37,3 +36,4 @@ Query parameters:
 
 - Only records with reporting `status = 5` are included.
 - Response metadata includes total downtime duration summaries.
+- Area dibatasi otomatis berdasarkan `area_id` user yang login.

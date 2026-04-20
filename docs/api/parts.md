@@ -28,7 +28,17 @@ Query parameters:
 
 - `per_page` optional, default `10`, max `100`
 - `search` optional
-- `area_id` optional
+- area dibatasi otomatis berdasarkan `area_id` user yang login
+
+### GET `/api/part_active`
+
+Get paginated part data where `status != 11`.
+
+Query parameters:
+
+- `per_page` optional, default `10`, max `100`
+- `search` optional
+- area dibatasi otomatis berdasarkan `area_id` user yang login
 
 ### GET `/api/parts/{id}`
 
@@ -42,7 +52,6 @@ Request body:
 
 ```json
 {
-  "area_id": 1,
   "code": "PRT001",
   "name": "Part A",
   "description": "Deskripsi part",
@@ -58,8 +67,15 @@ Update a part.
 
 Delete a part logically by changing `status` to `99`.
 
+### PUT `/api/part_setstatus/{id}`
+
+Toggle part status between `99` and `1`.
+
 ## Notes
 
 - Active part queries exclude records with `status = 99`.
-- `area_id` and `description` may be `null`.
+- `GET /api/part_active` excludes records with `status = 11`.
+- `PUT /api/part_setstatus/{id}` only supports current status `1` and `99`.
+- `GET` dan `POST` menggunakan `area_id` dari user login.
+- `description` may be `null`.
 - Validation is required for create and update requests.

@@ -15,9 +15,11 @@ class ReasonApiTest extends TestCase
 
     public function test_authenticated_user_can_list_reasons_with_pagination(): void
     {
-        $user = User::factory()->create();
-        Reason::factory()->count(12)->create();
-        Reason::factory()->deletedStatus()->create();
+        $area = Area::factory()->create();
+        $division = \App\Models\Division::factory()->forArea($area)->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
+        Reason::factory()->forArea($area)->count(12)->create(['division_id' => $division->id]);
+        Reason::factory()->forArea($area)->deletedStatus()->create(['division_id' => $division->id]);
 
         $token = auth('api')->login($user);
 
@@ -34,17 +36,36 @@ class ReasonApiTest extends TestCase
         $this->assertCount(10, $response->json('data'));
     }
 
+    public function test_authenticated_user_can_list_reason_active_with_status_not_equal_eleven(): void
+    {
+        $area = Area::factory()->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
+        $division = \App\Models\Division::factory()->forArea($area)->create();
+        Reason::factory()->forArea($area)->create(['division_id' => $division->id, 'code' => 'RSN001', 'status' => 1]);
+        Reason::factory()->forArea($area)->create(['division_id' => $division->id, 'code' => 'RSN002', 'status' => 0]);
+        Reason::factory()->forArea($area)->create(['division_id' => $division->id, 'code' => 'RSN011', 'status' => 11]);
+
+        $token = auth('api')->login($user);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/reason_active?division_id='.$division->id);
+
+        $response->assertOk()
+            ->assertJsonPath('meta.total', 2);
+    }
+
     public function test_authenticated_user_can_filter_reasons_by_area(): void
     {
-        $user = User::factory()->create();
         $area = Area::factory()->create();
-        Reason::factory()->forArea($area)->count(2)->create();
+        $division = \App\Models\Division::factory()->forArea($area)->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
+        Reason::factory()->forArea($area)->count(2)->create(['division_id' => $division->id]);
         Reason::factory()->count(3)->create();
 
         $token = auth('api')->login($user);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
-            ->getJson('/api/reasons?area_id='.$area->id);
+            ->getJson('/api/reasons');
 
         $response->assertOk()
             ->assertJsonPath('meta.total', 2);
@@ -52,10 +73,10 @@ class ReasonApiTest extends TestCase
 
     public function test_authenticated_user_can_view_reason_detail(): void
     {
-        $user = User::factory()->create();
         $area = Area::factory()->create([
             'name' => 'Area Alasan',
         ]);
+        $user = User::factory()->create(['area_id' => $area->id]);
         $divisionId = DB::table('divisions')->insertGetId([
             'area_id' => $area->id,
             'code' => 'DIV777',
@@ -84,8 +105,8 @@ class ReasonApiTest extends TestCase
 
     public function test_authenticated_user_can_create_reason(): void
     {
-        $user = User::factory()->create();
         $area = Area::factory()->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
         $divisionId = DB::table('divisions')->insertGetId([
             'area_id' => $area->id,
             'code' => 'DIV001',
@@ -98,7 +119,6 @@ class ReasonApiTest extends TestCase
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/reasons', [
-                'area_id' => $area->id,
                 'code' => 'RSN001',
                 'name' => 'Alasan A',
                 'division_id' => $divisionId,
@@ -223,5 +243,19 @@ class ReasonApiTest extends TestCase
             ->assertJsonPath('success', false)
             ->assertJsonPath('message', 'Bad request')
             ->assertJsonPath('errors.request.0', 'Reason has already been deleted.');
+    }
+
+    public function test_authenticated_user_can_toggle_reason_status_between_ninety_nine_and_one(): void
+    {
+        $user = User::factory()->create();
+        $reason = Reason::factory()->deletedStatus()->create();
+        $token = auth('api')->login($user);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->putJson('/api/reason_setstatus/'.$reason->id);
+
+        $response->assertOk()
+            ->assertJsonPath('message', 'Reason status updated successfully')
+            ->assertJsonPath('data.status', 1);
     }
 }

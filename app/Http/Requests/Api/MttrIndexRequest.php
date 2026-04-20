@@ -21,7 +21,6 @@ class MttrIndexRequest extends BaseApiFormRequest
             'position_id' => ['sometimes', 'integer'],
             'part_id' => ['sometimes', 'integer'],
             'operation_id' => ['sometimes', 'integer'],
-            'area_id' => ['sometimes', 'integer'],
         ];
     }
 }

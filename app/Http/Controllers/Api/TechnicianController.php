@@ -13,20 +13,59 @@ use Illuminate\Support\Facades\DB;
 
 class TechnicianController extends Controller
 {
-    public function index(Request $request)
+    public function technicianActive(Request $request)
     {
         try {
+            $user = auth('api')->user();
             $perPage = (int) $request->integer('per_page', 10);
             $perPage = max(1, min($perPage, 100));
             $search = trim((string) $request->query('search', ''));
-            $areaId = $request->query('area_id');
+            $divisionId = $request->query('division_id');
+            $groupId = $request->query('group_id');
+
+            $techniciansQuery = Technician::query()
+                ->with(['area', 'division', 'group'])
+                ->where('status', '<>', 11)
+                ->when($user?->area_id !== null, fn ($query) => $query->where('area_id', $user->area_id), fn ($query) => $query->whereNull('area_id'))
+                ->when($divisionId !== null && $divisionId !== '', fn ($query) => $query->where('division_id', $divisionId))
+                ->when($groupId !== null && $groupId !== '', fn ($query) => $query->where('group_id', $groupId))
+                ->when($search !== '', function ($query) use ($search) {
+                    $query->where(function ($subQuery) use ($search) {
+                        $subQuery->where('code', 'like', '%'.$search.'%')
+                            ->orWhere('name', 'like', '%'.$search.'%');
+                    });
+                })
+                ->orderBy('id', 'desc');
+
+            $technicians = $techniciansQuery->paginate($perPage)->appends($request->query());
+
+            return ApiResponseHelper::success('Data retrieved successfully', $technicians->getCollection()->map(
+                fn (Technician $technician) => TechnicianDataHelper::transform($technician)
+            )->all(), [
+                'current_page' => $technicians->currentPage(),
+                'last_page' => $technicians->lastPage(),
+                'per_page' => $technicians->perPage(),
+                'total' => $technicians->total(),
+            ]);
+        } catch (\Throwable $exception) {
+            return ApiResponseHelper::error('Failed to retrieve active technicians');
+        }
+    }
+
+    public function index(Request $request)
+    {
+        try {
+            $user = auth('api')->user();
+            $perPage = (int) $request->integer('per_page', 10);
+            $perPage = max(1, min($perPage, 100));
+            $search = trim((string) $request->query('search', ''));
             $divisionId = $request->query('division_id');
             $groupId = $request->query('group_id');
 
             $techniciansQuery = Technician::query()
                 ->with(['area', 'division', 'group'])
                 ->where('status', '<>', 99)
-                ->when($areaId !== null && $areaId !== '', fn ($query) => $query->where('area_id', $areaId))
+                ->when($user?->area_id !== null, fn ($query) => $query->where('area_id', $user->area_id), fn ($query) => $query->whereNull('area_id'))
                 ->when($divisionId !== null && $divisionId !== '', fn ($query) => $query->where('division_id', $divisionId))
                 ->when($groupId !== null && $groupId !== '', fn ($query) => $query->where('group_id', $groupId))
                 ->when($search !== '', function ($query) use ($search) {
@@ -57,7 +96,7 @@ class TechnicianController extends Controller
         try {
             $technician = DB::transaction(function () use ($request) {
                 return Technician::create([
-                    'area_id' => $request->input('area_id'),
+                    'area_id' => auth('api')->user()?->area_id,
                     'code' => $request->string('code')->toString(),
                     'name' => $request->string('name')->toString(),
                     'division_id' => $request->input('division_id'),
@@ -77,7 +116,11 @@ class TechnicianController extends Controller
     public function show(Technician $technician)
     {
         try {
+            $user = auth('api')->user();
             if ((int) $technician->status === 99) {
+                return ApiResponseHelper::error('Resource not found', null, 404);
+            }
+            if ((int) $technician->area_id !== (int) $user?->area_id) {
                 return ApiResponseHelper::error('Resource not found', null, 404);
             }
 
@@ -135,6 +178,27 @@ class TechnicianController extends Controller
             return ApiResponseHelper::success('Technician deleted successfully', TechnicianDataHelper::transform($technician));
         } catch (\Throwable $exception) {
             return ApiResponseHelper::error('Failed to delete technician');
+        }
+    }
+
+    public function technicianSetstatus(Technician $technician)
+    {
+        try {
+            if (! in_array((int) $technician->status, [1, 99], true)) {
+                return ApiResponseHelper::error('Bad request', [
+                    'status' => ['Technician status must be 1 or 99 to be toggled.'],
+                ], 400);
+            }
+
+            $technician->update([
+                'status' => (int) $technician->status === 99 ? 1 : 99,
+            ]);
+
+            $technician->refresh()->load(['area', 'division', 'group']);
+
+            return ApiResponseHelper::success('Technician status updated successfully', TechnicianDataHelper::transform($technician));
+        } catch (\Throwable $exception) {
+            return ApiResponseHelper::error('Failed to update technician status');
         }
     }
 }

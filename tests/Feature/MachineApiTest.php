@@ -7,6 +7,7 @@ use App\Models\Machine;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
@@ -23,15 +24,15 @@ class MachineApiTest extends TestCase
 
     public function test_authenticated_user_can_list_machines_with_pagination(): void
     {
-        $user = User::factory()->create();
         $area = Area::factory()->create([
             'name' => 'Area Produksi',
         ]);
-        Machine::factory()->count(11)->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
+        Machine::factory()->forArea($area)->count(11)->create();
         Machine::factory()->forArea($area)->create([
             'code' => 'MCH-AREA',
         ]);
-        Machine::factory()->deletedStatus()->create();
+        Machine::factory()->forArea($area)->deletedStatus()->create();
 
         $token = auth('api')->login($user);
 
@@ -49,17 +50,34 @@ class MachineApiTest extends TestCase
         $this->assertTrue(collect($response->json('data'))->contains(fn (array $item) => $item['code'] === 'MCH-AREA' && $item['area_name'] === 'Area Produksi'));
     }
 
-    public function test_authenticated_user_can_filter_machines_by_area(): void
+    public function test_authenticated_user_can_list_machine_active_with_status_not_equal_eleven(): void
     {
-        $user = User::factory()->create();
         $area = Area::factory()->create();
-        Machine::factory()->forArea($area)->count(2)->create();
-        Machine::factory()->count(3)->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
+        Machine::factory()->forArea($area)->create(['code' => 'MCH001', 'status' => 1]);
+        Machine::factory()->forArea($area)->create(['code' => 'MCH002', 'status' => 0]);
+        Machine::factory()->forArea($area)->create(['code' => 'MCH011', 'status' => 11]);
 
         $token = auth('api')->login($user);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
-            ->getJson('/api/machines?area_id='.$area->id);
+            ->getJson('/api/machine_active');
+
+        $response->assertOk()
+            ->assertJsonPath('meta.total', 2);
+    }
+
+    public function test_authenticated_user_can_filter_machines_by_area(): void
+    {
+        $area = Area::factory()->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
+        Machine::factory()->forArea($area)->count(2)->create();
+        Machine::factory()->forArea(Area::factory()->create())->count(3)->create();
+
+        $token = auth('api')->login($user);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/machines');
 
         $response->assertOk()
             ->assertJsonPath('meta.total', 2);
@@ -67,10 +85,10 @@ class MachineApiTest extends TestCase
 
     public function test_authenticated_user_can_view_machine_detail(): void
     {
-        $user = User::factory()->create();
         $area = Area::factory()->create([
             'name' => 'Area Utility',
         ]);
+        $user = User::factory()->create(['area_id' => $area->id]);
         $machine = Machine::factory()->create([
             'area_id' => $area->id,
             'code' => 'MCH001',
@@ -89,13 +107,12 @@ class MachineApiTest extends TestCase
 
     public function test_admin_can_create_machine(): void
     {
-        $admin = User::factory()->admin()->create();
         $area = Area::factory()->create();
+        $admin = User::factory()->admin()->create(['area_id' => $area->id]);
         $token = auth('api')->login($admin);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/machines', [
-                'area_id' => $area->id,
                 'code' => 'MCH001',
                 'name' => 'Mesin Potong',
                 'description' => 'Mesin untuk proses potong',
@@ -141,12 +158,12 @@ class MachineApiTest extends TestCase
 
     public function test_authenticated_user_can_create_machine(): void
     {
-        $user = User::factory()->create();
+        $area = Area::factory()->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
         $token = auth('api')->login($user);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/machines', [
-                'area_id' => null,
                 'code' => 'MCH001',
                 'name' => 'Mesin Potong',
                 'description' => null,
@@ -162,13 +179,12 @@ class MachineApiTest extends TestCase
 
     public function test_authenticated_user_can_create_machine_with_uploaded_images(): void
     {
-        $user = User::factory()->create();
         $area = Area::factory()->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
         $token = auth('api')->login($user);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->post('/api/machines', [
-                'area_id' => $area->id,
                 'code' => 'MCH-UPLOAD',
                 'name' => 'Mesin Upload',
                 'description' => 'Mesin dengan upload gambar',
@@ -278,5 +294,252 @@ class MachineApiTest extends TestCase
             ->assertJsonPath('success', false)
             ->assertJsonPath('message', 'Bad request')
             ->assertJsonPath('errors.request.0', 'Machine has already been deleted.');
+    }
+
+    public function test_authenticated_user_can_get_legacy_machine_full_data_array(): void
+    {
+        $area = Area::factory()->create();
+        $user = User::factory()->create([
+            'area_id' => $area->id,
+        ]);
+        $machine = Machine::factory()->forArea($area)->create([
+            'code' => 'MCH-LEGACY',
+            'name' => 'Legacy Machine',
+            'description' => 'Legacy description',
+        ]);
+        $otherArea = Area::factory()->create();
+        Machine::factory()->forArea($otherArea)->create([
+            'code' => 'MCH-OTHER',
+            'name' => 'Other Machine',
+        ]);
+        $part = \App\Models\Part::factory()->forArea($area)->create([
+            'code' => 'PRT100',
+            'name' => 'Bearing',
+        ]);
+
+        DB::table('machine_parts')->insert([
+            'machine_id' => $machine->id,
+            'part_id' => $part->id,
+            'sort_order' => 1,
+            'pos_x' => '12',
+            'pos_y' => '24',
+        ]);
+
+        $token = auth('api')->login($user);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/machine/get-full-data-array?term=Legacy');
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.code', 'MCH-LEGACY')
+            ->assertJsonPath('data.0.parts.0.code', 'PRT100')
+            ->assertJsonPath('data.0.parts.0.x', '12');
+    }
+
+    public function test_authenticated_user_can_get_legacy_machine_positions(): void
+    {
+        $area = Area::factory()->create();
+        $user = User::factory()->create([
+            'area_id' => $area->id,
+        ]);
+        $machine = Machine::factory()->forArea($area)->create();
+        $position = \App\Models\Position::factory()->forArea($area)->create([
+            'name' => 'Front Left',
+        ]);
+
+        DB::table('machine_position')->insert([
+            'machine_id' => $machine->id,
+            'position_id' => $position->id,
+        ]);
+
+        $token = auth('api')->login($user);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/machine/'.$machine->id.'/get-position?selected='.$position->id);
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.0.id', (string) $position->id)
+            ->assertJsonPath('data.0.text', 'Front Left')
+            ->assertJsonPath('data.0.selected', true);
+    }
+
+    public function test_authenticated_user_can_get_legacy_machine_parts_for_position(): void
+    {
+        $area = Area::factory()->create();
+        $user = User::factory()->create([
+            'area_id' => $area->id,
+        ]);
+        $machine = Machine::factory()->forArea($area)->create();
+        $position = \App\Models\Position::factory()->forArea($area)->create();
+        $part = \App\Models\Part::factory()->forArea($area)->create([
+            'name' => 'Motor',
+        ]);
+
+        DB::table('machine_parts')->insert([
+            'machine_id' => $machine->id,
+            'part_id' => $part->id,
+            'sort_order' => 1,
+            'pos_x' => '10',
+            'pos_y' => '20',
+        ]);
+
+        DB::table('machine_position_parts')->insert([
+            'area_id' => $area->id,
+            'machine_id' => $machine->id,
+            'position_id' => $position->id,
+            'part_id' => $part->id,
+            'serial_number' => 'SN-001',
+        ]);
+
+        $token = auth('api')->login($user);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/machine/'.$machine->id.'/'.$position->id.'/get-part');
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.0.id', (string) $part->id)
+            ->assertJsonPath('data.0.serial_number', 'SN-001')
+            ->assertJsonPath('data.0.text', 'Motor (SN-001)');
+    }
+
+    public function test_authenticated_user_can_get_legacy_machine_job_detail(): void
+    {
+        $area = Area::factory()->create();
+        $user = User::factory()->create([
+            'area_id' => $area->id,
+        ]);
+        $machine = Machine::factory()->forArea($area)->active()->create([
+            'code' => 'MCH-JOB',
+            'name' => 'Machine Job',
+            'image' => 'images/machines/1/front.png',
+            'image_side' => 'images/machines/1/side.png',
+        ]);
+        $position = \App\Models\Position::factory()->forArea($area)->create();
+        $frontPart = \App\Models\Part::factory()->forArea($area)->create([
+            'code' => 'PRT-FR',
+            'name' => 'Front Part',
+        ]);
+        $sidePart = \App\Models\Part::factory()->forArea($area)->create([
+            'code' => 'PRT-SD',
+            'name' => 'Side Part',
+        ]);
+
+        DB::table('machine_parts')->insert([
+            'machine_id' => $machine->id,
+            'part_id' => $frontPart->id,
+            'sort_order' => 1,
+            'pos_x' => '11',
+            'pos_y' => '22',
+        ]);
+
+        DB::table('machine_part_sides')->insert([
+            'machine_id' => $machine->id,
+            'part_id' => $sidePart->id,
+            'sort_order' => 1,
+            'pos_x' => '33',
+            'pos_y' => '44',
+        ]);
+
+        DB::table('machine_position_parts')->insert([
+            'area_id' => $area->id,
+            'machine_id' => $machine->id,
+            'position_id' => $position->id,
+            'part_id' => $frontPart->id,
+            'serial_number' => 'SN-FRONT',
+        ]);
+
+        DB::table('machine_position_parts')->insert([
+            'area_id' => $area->id,
+            'machine_id' => $machine->id,
+            'position_id' => $position->id,
+            'part_id' => $sidePart->id,
+            'serial_number' => 'SN-SIDE',
+        ]);
+
+        $token = auth('api')->login($user);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/machine/'.$machine->id.'/'.$position->id.'/get-detail-job');
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.code', 'MCH-JOB')
+            ->assertJsonPath('data.parts.0.serial_number', 'SN-FRONT')
+            ->assertJsonPath('data.parts_side.0.serial_number', 'SN-SIDE');
+    }
+
+    public function test_authenticated_user_can_activate_completed_machine(): void
+    {
+        $user = User::factory()->create();
+        $machine = Machine::factory()->create([
+            'status' => 0,
+        ]);
+
+        DB::table('machine_progress')->insert([
+            'machine_id' => $machine->id,
+            'data' => 1,
+            'position' => 1,
+            'operation' => 0,
+            'reason' => 0,
+            'image' => 1,
+            'part' => 1,
+        ]);
+
+        $token = auth('api')->login($user);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->putJson('/api/machines/'.$machine->id.'/activate');
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('message', 'Machine activation updated successfully')
+            ->assertJsonPath('data.status', 1)
+            ->assertJsonPath('data.progress', 100);
+    }
+
+    public function test_activate_machine_returns_error_when_progress_is_incomplete(): void
+    {
+        $user = User::factory()->create();
+        $machine = Machine::factory()->create([
+            'status' => 0,
+        ]);
+
+        DB::table('machine_progress')->insert([
+            'machine_id' => $machine->id,
+            'data' => 1,
+            'position' => 0,
+            'operation' => 0,
+            'reason' => 0,
+            'image' => 1,
+            'part' => 0,
+        ]);
+
+        $token = auth('api')->login($user);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->putJson('/api/machines/'.$machine->id.'/activate');
+
+        $response->assertStatus(400)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('message', 'Bad request')
+            ->assertJsonPath('errors.request.0', 'Machine progress must be 100 before activation.');
+    }
+
+    public function test_authenticated_user_can_toggle_machine_status_between_ninety_nine_and_one(): void
+    {
+        $user = User::factory()->create();
+        $machine = Machine::factory()->deletedStatus()->create();
+        $token = auth('api')->login($user);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->putJson('/api/machine_setstatus/'.$machine->id);
+
+        $response->assertOk()
+            ->assertJsonPath('message', 'Machine status updated successfully')
+            ->assertJsonPath('data.status', 1);
     }
 }

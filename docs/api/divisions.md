@@ -28,7 +28,17 @@ Query parameters:
 
 - `per_page` optional, default `10`, max `100`
 - `search` optional
-- `area_id` optional
+- area dibatasi otomatis berdasarkan `area_id` user yang login
+
+### GET `/api/division_active`
+
+Get paginated division data where `status != 11`.
+
+Query parameters:
+
+- `per_page` optional, default `10`, max `100`
+- `search` optional
+- area dibatasi otomatis berdasarkan `area_id` user yang login
 
 ### GET `/api/divisions/{id}`
 
@@ -42,7 +52,6 @@ Request body:
 
 ```json
 {
-  "area_id": 1,
   "code": "DIV001",
   "name": "Divisi A",
   "status": 1
@@ -57,8 +66,14 @@ Update a division.
 
 Delete a division logically by changing `status` to `99`.
 
+### PUT `/api/division_setstatus/{id}`
+
+Toggle division status between `99` and `1`.
+
 ## Notes
 
 - Active division queries exclude records with `status = 99`.
-- `area_id` may be `null`.
+- `GET /api/division_active` excludes records with `status = 11`.
+- `PUT /api/division_setstatus/{id}` only supports current status `1` and `99`.
+- `GET` dan `POST` menggunakan `area_id` dari user login.
 - Validation is required for create and update requests.
