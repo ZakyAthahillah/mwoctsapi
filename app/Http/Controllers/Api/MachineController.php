@@ -90,7 +90,7 @@ class MachineController extends Controller
     {
         try {
             $machine = DB::transaction(function () use ($request) {
-                $positionIds = $request->validated('position_ids', []);
+                $positionIds = $request->validated('position_id', []);
 
                 $machine = Machine::create([
                     'area_id' => auth('api')->user()?->area_id,
@@ -177,8 +177,8 @@ class MachineController extends Controller
                     'status' => $request->integer('status'),
                 ]);
 
-                if ($request->exists('position_ids')) {
-                    $positionIds = $request->validated('position_ids', []);
+                if ($request->exists('position_id') || $request->exists('position_ids')) {
+                    $positionIds = $request->validated('position_id', []);
 
                     $machine->positions()->sync($positionIds);
 

@@ -160,7 +160,7 @@ class MachineApiTest extends TestCase
                 'description' => 'Mesin dengan beberapa posisi',
                 'image' => null,
                 'image_side' => null,
-                'position_ids' => [$positionOne->id, $positionTwo->id],
+                'position_id' => [$positionOne->id, $positionTwo->id],
                 'status' => 1,
             ]);
 
@@ -196,7 +196,7 @@ class MachineApiTest extends TestCase
             ->assertJsonPath('success', false)
             ->assertJsonPath('message', 'Bad request')
             ->assertJsonStructure([
-                'errors' => ['code', 'name', 'status'],
+                'errors' => ['code', 'name'],
             ]);
     }
 
@@ -219,6 +219,33 @@ class MachineApiTest extends TestCase
         $response->assertStatus(201)
             ->assertJsonPath('success', true)
             ->assertJsonPath('message', 'Machine created successfully');
+    }
+
+    public function test_authenticated_user_can_create_machine_without_images_and_status_payload(): void
+    {
+        $area = Area::factory()->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
+        $token = auth('api')->login($user);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->postJson('/api/machines', [
+                'code' => 'MCH-DEFAULT',
+                'name' => 'Mesin Default',
+                'description' => 'Mesin tanpa image dan status',
+            ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.image', null)
+            ->assertJsonPath('data.image_side', null)
+            ->assertJsonPath('data.status', 1);
+
+        $this->assertDatabaseHas('machines', [
+            'code' => 'MCH-DEFAULT',
+            'status' => 1,
+            'image' => null,
+            'image_side' => null,
+        ]);
     }
 
     public function test_authenticated_user_can_create_machine_with_uploaded_images(): void
@@ -319,7 +346,7 @@ class MachineApiTest extends TestCase
                 'description' => 'Update posisi mesin',
                 'image' => null,
                 'image_side' => null,
-                'position_ids' => [$newPositionOne->id, $newPositionTwo->id],
+                'position_id' => [$newPositionOne->id, $newPositionTwo->id],
                 'status' => 1,
             ]);
 
@@ -360,7 +387,7 @@ class MachineApiTest extends TestCase
                 'description' => null,
                 'image' => null,
                 'image_side' => null,
-                'position_ids' => [$foreignPosition->id],
+                'position_id' => [$foreignPosition->id],
                 'status' => 1,
             ]);
 
@@ -368,7 +395,7 @@ class MachineApiTest extends TestCase
             ->assertJsonPath('success', false)
             ->assertJsonPath('message', 'Bad request')
             ->assertJsonStructure([
-                'errors' => ['position_ids.0'],
+                'errors' => ['position_id.0'],
             ]);
     }
 

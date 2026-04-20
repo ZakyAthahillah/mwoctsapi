@@ -90,7 +90,7 @@ Toggle machine activation between `0` and `1`. The machine must not be deleted a
 Create a new machine.
 
 Request body bisa memakai JSON string URL lama atau multipart form-data untuk upload file.
-Endpoint ini juga mendukung assign beberapa posisi sekaligus saat create memakai field `position_ids`.
+Endpoint ini juga mendukung assign beberapa posisi sekaligus saat create memakai field `position_id`.
 
 Contoh JSON:
 
@@ -99,14 +99,15 @@ Contoh JSON:
   "code": "MCH001",
   "name": "Mesin Potong",
   "description": "Mesin untuk proses potong",
-  "image": "front.png",
-  "image_side": "side.png",
-  "position_ids": [1, 2],
+  "image": null,
+  "image_side": null,
+  "position_id": [1, 2],
   "status": 1
 }
 ```
 
 Jika `image` dan `image_side` dikirim sebagai nama file string saat create, nilai yang disimpan akan otomatis menjadi `images/machines/{id}/front.png` dan `images/machines/{id}/side.png`.
+Jika `image`, `image_side`, atau `status` tidak dikirim saat create, API akan mengisi `image=null`, `image_side=null`, dan `status=1`.
 
 Contoh multipart form-data:
 
@@ -121,8 +122,8 @@ name=Mesin Potong
 description=Mesin untuk proses potong
 image=<front-image-file>
 image_side=<side-image-file>
-position_ids[]=1
-position_ids[]=2
+position_id[]=1
+position_id[]=2
 status=1
 ```
 
@@ -153,7 +154,8 @@ Toggle machine status between `99` and `1`.
   - `PUT|POST /api/machine/{machine}/activate`
 - `GET` dan `POST` menggunakan `area_id` dari user login.
 - `description`, `image`, and `image_side` may be `null`.
-- `position_ids` optional dan bisa berisi 1 atau lebih `position.id` aktif dari area user yang login.
+- `status` pada create akan default ke `1` jika tidak dikirim.
+- `position_id` optional dan bisa berisi 1 atau lebih `position.id` aktif dari area user yang login.
 - Saat `image` atau `image_side` dikirim sebagai file upload pada endpoint create, file disimpan ke `public/images/machines/{id}`.
 - Nilai kolom `image` dan `image_side` akan disimpan sebagai path relatif, misalnya `images/machines/{id}/front.jpeg`.
 - Untuk menampilkan di web, gabungkan dengan base URL aplikasi, misalnya `{{ url($machine->image) }}` di Blade atau `window.location.origin + '/' + machine.image` di frontend.

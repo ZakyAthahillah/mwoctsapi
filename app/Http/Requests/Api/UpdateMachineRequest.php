@@ -8,10 +8,10 @@ class UpdateMachineRequest extends BaseApiFormRequest
 {
     protected function prepareForValidation(): void
     {
-        $positionIds = $this->input('position_ids');
+        $positionIds = $this->input('position_id');
 
-        if ($positionIds === null && $this->exists('position_id')) {
-            $positionIds = $this->input('position_id');
+        if ($positionIds === null && $this->exists('position_ids')) {
+            $positionIds = $this->input('position_ids');
         }
 
         if ($positionIds === null && $this->exists('positions')) {
@@ -24,7 +24,7 @@ class UpdateMachineRequest extends BaseApiFormRequest
 
         if ($positionIds !== null) {
             $this->merge([
-                'position_ids' => array_values($positionIds),
+                'position_id' => array_values($positionIds),
             ]);
         }
     }
@@ -58,8 +58,8 @@ class UpdateMachineRequest extends BaseApiFormRequest
             'description' => ['present', 'nullable', 'string'],
             'image' => ['present', 'nullable', 'string', 'max:255'],
             'image_side' => ['present', 'nullable', 'string', 'max:255'],
-            'position_ids' => ['sometimes', 'array'],
-            'position_ids.*' => [
+            'position_id' => ['sometimes', 'array'],
+            'position_id.*' => [
                 'integer',
                 'distinct',
                 Rule::exists('positions', 'id')->where(function ($query) {

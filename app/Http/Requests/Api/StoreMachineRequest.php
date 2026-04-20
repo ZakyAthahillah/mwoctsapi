@@ -8,10 +8,11 @@ class StoreMachineRequest extends BaseApiFormRequest
 {
     protected function prepareForValidation(): void
     {
-        $positionIds = $this->input('position_ids');
+        $positionIds = $this->input('position_id');
+        $payload = [];
 
-        if ($positionIds === null && $this->exists('position_id')) {
-            $positionIds = $this->input('position_id');
+        if ($positionIds === null && $this->exists('position_ids')) {
+            $positionIds = $this->input('position_ids');
         }
 
         if ($positionIds === null && $this->exists('positions')) {
@@ -23,9 +24,23 @@ class StoreMachineRequest extends BaseApiFormRequest
         }
 
         if ($positionIds !== null) {
-            $this->merge([
-                'position_ids' => array_values($positionIds),
-            ]);
+            $payload['position_id'] = array_values($positionIds);
+        }
+
+        if (! $this->exists('image')) {
+            $payload['image'] = null;
+        }
+
+        if (! $this->exists('image_side')) {
+            $payload['image_side'] = null;
+        }
+
+        if (! $this->exists('status')) {
+            $payload['status'] = 1;
+        }
+
+        if ($payload !== []) {
+            $this->merge($payload);
         }
     }
 
@@ -59,8 +74,8 @@ class StoreMachineRequest extends BaseApiFormRequest
             'image_side' => ['present', 'nullable', function (string $attribute, mixed $value, \Closure $fail) {
                 $this->validateImageInput($attribute, $value, $fail);
             }],
-            'position_ids' => ['sometimes', 'array'],
-            'position_ids.*' => [
+            'position_id' => ['sometimes', 'array'],
+            'position_id.*' => [
                 'integer',
                 'distinct',
                 Rule::exists('positions', 'id')->where(function ($query) use ($areaId) {

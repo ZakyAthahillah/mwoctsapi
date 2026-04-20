@@ -622,10 +622,19 @@ POST /api/machines
   "code": "MCH001",
   "name": "Mesin Potong",
   "description": "Mesin untuk proses potong",
-  "image": "front.png",
-  "image_side": "side.png",
-  "position_ids": [1, 2],
+  "image": null,
+  "image_side": null,
+  "position_id": [1, 2],
   "status": 1
+}
+
+Create machine with default status and nullable images
+POST /api/machines
+{
+  "code": "MCH002",
+  "name": "Mesin Default",
+  "description": "Mesin tanpa image",
+  "position_id": [1, 2]
 }
 
 Saved values example for string input:
@@ -645,8 +654,8 @@ name=Mesin Potong
 description=Mesin untuk proses potong
 image=<front-image-file>
 image_side=<side-image-file>
-position_ids[]=1
-position_ids[]=2
+position_id[]=1
+position_id[]=2
 status=1
 
 Saved values example:
