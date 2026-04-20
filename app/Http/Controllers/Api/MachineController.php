@@ -90,6 +90,8 @@ class MachineController extends Controller
     {
         try {
             $machine = DB::transaction(function () use ($request) {
+                $positionIds = $request->validated('position_ids', []);
+
                 $machine = Machine::create([
                     'area_id' => auth('api')->user()?->area_id,
                     'code' => $request->string('code')->toString(),
@@ -103,12 +105,16 @@ class MachineController extends Controller
                 DB::table('machine_progress')->insert([
                     'machine_id' => $machine->id,
                     'data' => 1,
-                    'position' => 0,
+                    'position' => $positionIds !== [] ? 1 : 0,
                     'operation' => 0,
                     'reason' => 0,
                     'image' => 0,
                     'part' => 0,
                 ]);
+
+                if ($positionIds !== []) {
+                    $machine->positions()->sync($positionIds);
+                }
 
                 return $machine;
             });
@@ -170,6 +176,18 @@ class MachineController extends Controller
                     'image_side' => $request->input('image_side'),
                     'status' => $request->integer('status'),
                 ]);
+
+                if ($request->exists('position_ids')) {
+                    $positionIds = $request->validated('position_ids', []);
+
+                    $machine->positions()->sync($positionIds);
+
+                    DB::table('machine_progress')
+                        ->where('machine_id', $machine->id)
+                        ->update([
+                            'position' => $positionIds !== [] ? 1 : 0,
+                        ]);
+                }
             });
 
             $machine->refresh()->load('area');

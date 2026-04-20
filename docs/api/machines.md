@@ -90,6 +90,7 @@ Toggle machine activation between `0` and `1`. The machine must not be deleted a
 Create a new machine.
 
 Request body bisa memakai JSON string URL lama atau multipart form-data untuk upload file.
+Endpoint ini juga mendukung assign beberapa posisi sekaligus saat create memakai field `position_ids`.
 
 Contoh JSON:
 
@@ -100,6 +101,7 @@ Contoh JSON:
   "description": "Mesin untuk proses potong",
   "image": "front.png",
   "image_side": "side.png",
+  "position_ids": [1, 2],
   "status": 1
 }
 ```
@@ -119,6 +121,8 @@ name=Mesin Potong
 description=Mesin untuk proses potong
 image=<front-image-file>
 image_side=<side-image-file>
+position_ids[]=1
+position_ids[]=2
 status=1
 ```
 
@@ -149,6 +153,7 @@ Toggle machine status between `99` and `1`.
   - `PUT|POST /api/machine/{machine}/activate`
 - `GET` dan `POST` menggunakan `area_id` dari user login.
 - `description`, `image`, and `image_side` may be `null`.
+- `position_ids` optional dan bisa berisi 1 atau lebih `position.id` aktif dari area user yang login.
 - Saat `image` atau `image_side` dikirim sebagai file upload pada endpoint create, file disimpan ke `public/images/machines/{id}`.
 - Nilai kolom `image` dan `image_side` akan disimpan sebagai path relatif, misalnya `images/machines/{id}/front.jpeg`.
 - Untuk menampilkan di web, gabungkan dengan base URL aplikasi, misalnya `{{ url($machine->image) }}` di Blade atau `window.location.origin + '/' + machine.image` di frontend.

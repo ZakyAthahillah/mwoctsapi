@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Area;
 use App\Models\Machine;
+use App\Models\Position;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -140,6 +141,49 @@ class MachineApiTest extends TestCase
         ]);
     }
 
+    public function test_authenticated_user_can_create_machine_with_multiple_positions(): void
+    {
+        $area = Area::factory()->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
+        $positionOne = Position::factory()->forArea($area)->create([
+            'name' => 'Posisi A',
+        ]);
+        $positionTwo = Position::factory()->forArea($area)->create([
+            'name' => 'Posisi B',
+        ]);
+        $token = auth('api')->login($user);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->postJson('/api/machines', [
+                'code' => 'MCH-MULTI',
+                'name' => 'Mesin Multi Posisi',
+                'description' => 'Mesin dengan beberapa posisi',
+                'image' => null,
+                'image_side' => null,
+                'position_ids' => [$positionOne->id, $positionTwo->id],
+                'status' => 1,
+            ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('message', 'Machine created successfully');
+
+        $machineId = (int) $response->json('data.id');
+
+        $this->assertDatabaseHas('machine_position', [
+            'machine_id' => $machineId,
+            'position_id' => $positionOne->id,
+        ]);
+        $this->assertDatabaseHas('machine_position', [
+            'machine_id' => $machineId,
+            'position_id' => $positionTwo->id,
+        ]);
+        $this->assertDatabaseHas('machine_progress', [
+            'machine_id' => $machineId,
+            'position' => 1,
+        ]);
+    }
+
     public function test_create_machine_returns_validation_error_when_payload_is_invalid(): void
     {
         $admin = User::factory()->admin()->create();
@@ -236,6 +280,96 @@ class MachineApiTest extends TestCase
             ->assertJsonPath('success', true)
             ->assertJsonPath('message', 'Machine updated successfully')
             ->assertJsonPath('data.code', 'MCH002');
+    }
+
+    public function test_admin_can_update_machine_positions(): void
+    {
+        $area = Area::factory()->create();
+        $admin = User::factory()->admin()->create(['area_id' => $area->id]);
+        $machine = Machine::factory()->create([
+            'area_id' => $area->id,
+            'code' => 'MCH-UPD-POS',
+        ]);
+        $oldPosition = Position::factory()->forArea($area)->create();
+        $newPositionOne = Position::factory()->forArea($area)->create();
+        $newPositionTwo = Position::factory()->forArea($area)->create();
+
+        DB::table('machine_position')->insert([
+            'machine_id' => $machine->id,
+            'position_id' => $oldPosition->id,
+        ]);
+
+        DB::table('machine_progress')->insert([
+            'machine_id' => $machine->id,
+            'data' => 1,
+            'position' => 1,
+            'operation' => 0,
+            'reason' => 0,
+            'image' => 0,
+            'part' => 0,
+        ]);
+
+        $token = auth('api')->login($admin);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->putJson('/api/machines/'.$machine->id, [
+                'area_id' => $area->id,
+                'code' => 'MCH-UPD-POS',
+                'name' => 'Mesin Update Posisi',
+                'description' => 'Update posisi mesin',
+                'image' => null,
+                'image_side' => null,
+                'position_ids' => [$newPositionOne->id, $newPositionTwo->id],
+                'status' => 1,
+            ]);
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('message', 'Machine updated successfully');
+
+        $this->assertDatabaseMissing('machine_position', [
+            'machine_id' => $machine->id,
+            'position_id' => $oldPosition->id,
+        ]);
+        $this->assertDatabaseHas('machine_position', [
+            'machine_id' => $machine->id,
+            'position_id' => $newPositionOne->id,
+        ]);
+        $this->assertDatabaseHas('machine_position', [
+            'machine_id' => $machine->id,
+            'position_id' => $newPositionTwo->id,
+        ]);
+        $this->assertDatabaseHas('machine_progress', [
+            'machine_id' => $machine->id,
+            'position' => 1,
+        ]);
+    }
+
+    public function test_create_machine_returns_validation_error_when_position_is_outside_authenticated_area(): void
+    {
+        $area = Area::factory()->create();
+        $otherArea = Area::factory()->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
+        $foreignPosition = Position::factory()->forArea($otherArea)->create();
+        $token = auth('api')->login($user);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->postJson('/api/machines', [
+                'code' => 'MCH-INVALID-POS',
+                'name' => 'Mesin Invalid Posisi',
+                'description' => null,
+                'image' => null,
+                'image_side' => null,
+                'position_ids' => [$foreignPosition->id],
+                'status' => 1,
+            ]);
+
+        $response->assertStatus(400)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('message', 'Bad request')
+            ->assertJsonStructure([
+                'errors' => ['position_ids.0'],
+            ]);
     }
 
     public function test_admin_cannot_update_deleted_machine(): void

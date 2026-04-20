@@ -624,6 +624,7 @@ POST /api/machines
   "description": "Mesin untuk proses potong",
   "image": "front.png",
   "image_side": "side.png",
+  "position_ids": [1, 2],
   "status": 1
 }
 
@@ -644,6 +645,8 @@ name=Mesin Potong
 description=Mesin untuk proses potong
 image=<front-image-file>
 image_side=<side-image-file>
+position_ids[]=1
+position_ids[]=2
 status=1
 
 Saved values example:

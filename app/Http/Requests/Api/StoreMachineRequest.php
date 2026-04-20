@@ -6,6 +6,29 @@ use Illuminate\Validation\Rule;
 
 class StoreMachineRequest extends BaseApiFormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        $positionIds = $this->input('position_ids');
+
+        if ($positionIds === null && $this->exists('position_id')) {
+            $positionIds = $this->input('position_id');
+        }
+
+        if ($positionIds === null && $this->exists('positions')) {
+            $positionIds = $this->input('positions');
+        }
+
+        if ($positionIds !== null && ! is_array($positionIds)) {
+            $positionIds = [$positionIds];
+        }
+
+        if ($positionIds !== null) {
+            $this->merge([
+                'position_ids' => array_values($positionIds),
+            ]);
+        }
+    }
+
     public function authorize(): bool
     {
         return true;
@@ -36,6 +59,18 @@ class StoreMachineRequest extends BaseApiFormRequest
             'image_side' => ['present', 'nullable', function (string $attribute, mixed $value, \Closure $fail) {
                 $this->validateImageInput($attribute, $value, $fail);
             }],
+            'position_ids' => ['sometimes', 'array'],
+            'position_ids.*' => [
+                'integer',
+                'distinct',
+                Rule::exists('positions', 'id')->where(function ($query) use ($areaId) {
+                    $query->where('status', '<>', 99);
+
+                    return $areaId === null
+                        ? $query->whereNull('area_id')
+                        : $query->where('area_id', $areaId);
+                }),
+            ],
             'status' => ['required', 'integer', 'between:0,99'],
         ];
     }
