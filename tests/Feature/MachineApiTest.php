@@ -310,6 +310,39 @@ class MachineApiTest extends TestCase
             ->assertJsonPath('data.code', 'MCH002');
     }
 
+    public function test_admin_can_update_machine_images_with_normalized_relative_paths(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $area = Area::factory()->create();
+        $machine = Machine::factory()->create([
+            'code' => 'MCH-IMG',
+        ]);
+
+        $token = auth('api')->login($admin);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->putJson('/api/machines/'.$machine->id, [
+                'area_id' => $area->id,
+                'code' => 'MCH-IMG',
+                'name' => 'Mesin Image',
+                'description' => 'Mesin image update',
+                'image' => 'http://localhost:8000/machines/'.$machine->id.'/CITASys Logo.jpg',
+                'image_side' => '/machines/'.$machine->id.'/side image.jpg',
+                'status' => 1,
+            ]);
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.image', 'machines/'.$machine->id.'/CITASys Logo.jpg')
+            ->assertJsonPath('data.image_side', 'machines/'.$machine->id.'/side image.jpg');
+
+        $this->assertDatabaseHas('machines', [
+            'id' => $machine->id,
+            'image' => 'machines/'.$machine->id.'/CITASys Logo.jpg',
+            'image_side' => 'machines/'.$machine->id.'/side image.jpg',
+        ]);
+    }
+
     public function test_admin_can_update_machine_positions(): void
     {
         $area = Area::factory()->create();

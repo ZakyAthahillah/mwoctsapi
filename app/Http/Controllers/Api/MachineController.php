@@ -167,15 +167,25 @@ class MachineController extends Controller
             }
 
             DB::transaction(function () use ($request, $machine) {
-                $machine->update([
+                $imagePayload = MachineImageHelper::resolveImageUrls($request, $machine);
+
+                $machinePayload = [
                     'area_id' => $request->input('area_id'),
                     'code' => $request->string('code')->toString(),
                     'name' => $request->string('name')->toString(),
                     'description' => $request->input('description'),
-                    'image' => $request->input('image'),
-                    'image_side' => $request->input('image_side'),
                     'status' => $request->integer('status'),
-                ]);
+                ];
+
+                if ($request->exists('image')) {
+                    $machinePayload['image'] = $imagePayload['image'] ?? null;
+                }
+
+                if ($request->exists('image_side')) {
+                    $machinePayload['image_side'] = $imagePayload['image_side'] ?? null;
+                }
+
+                $machine->update($machinePayload);
 
                 if ($request->exists('position_id') || $request->exists('position_ids')) {
                     $positionIds = $request->validated('position_id', []);
