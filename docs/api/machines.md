@@ -22,7 +22,7 @@ Machine API routes are defined in `routes/api.php`.
 
 ### GET `/api/machines`
 
-Get paginated machine data.
+Get paginated machine data. This list only returns machines with status `1` and `99`.
 
 Query parameters:
 
@@ -166,7 +166,7 @@ Toggle machine status between `99` and `1`.
 
 ## Notes
 
-- Active machine queries exclude records with `status = 99`.
+- `GET /api/machines` returns machines with status `1` and `99`.
 - `GET /api/machine_active` excludes records with `status = 11`.
 - `PUT /api/machine_setstatus/{id}` only supports current status `1` and `99`.
 - Legacy compatibility aliases are also available:

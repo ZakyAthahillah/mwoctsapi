@@ -60,7 +60,7 @@ class MachineController extends Controller
 
             $machinesQuery = Machine::query()
                 ->with('area')
-                ->where('status', '<>', 99)
+                ->whereIn('status', [1, 99])
                 ->when($user?->area_id !== null, fn ($query) => $query->where('area_id', $user->area_id), fn ($query) => $query->whereNull('area_id'))
                 ->when($search !== '', function ($query) use ($search) {
                     $query->where(function ($subQuery) use ($search) {

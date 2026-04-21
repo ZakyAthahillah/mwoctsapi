@@ -30,11 +30,18 @@ class MachineApiTest extends TestCase
             'name' => 'Area Produksi',
         ]);
         $user = User::factory()->create(['area_id' => $area->id]);
-        Machine::factory()->forArea($area)->count(11)->create();
+        Machine::factory()->forArea($area)->count(10)->create(['status' => 1]);
         Machine::factory()->forArea($area)->create([
             'code' => 'MCH-AREA',
+            'status' => 1,
         ]);
-        Machine::factory()->forArea($area)->deletedStatus()->create();
+        Machine::factory()->forArea($area)->create([
+            'code' => 'MCH-INACTIVE',
+            'status' => 0,
+        ]);
+        Machine::factory()->forArea($area)->deletedStatus()->create([
+            'code' => 'MCH-DELETED',
+        ]);
 
         $token = auth('api')->login($user);
 
@@ -50,6 +57,8 @@ class MachineApiTest extends TestCase
 
         $this->assertCount(10, $response->json('data'));
         $this->assertTrue(collect($response->json('data'))->contains(fn (array $item) => $item['code'] === 'MCH-AREA' && $item['area_name'] === 'Area Produksi'));
+        $this->assertTrue(collect($response->json('data'))->contains(fn (array $item) => $item['code'] === 'MCH-DELETED' && $item['status'] === 99));
+        $this->assertFalse(collect($response->json('data'))->contains(fn (array $item) => $item['code'] === 'MCH-INACTIVE'));
     }
 
     public function test_authenticated_user_can_list_machine_active_with_status_not_equal_eleven(): void
@@ -73,8 +82,8 @@ class MachineApiTest extends TestCase
     {
         $area = Area::factory()->create();
         $user = User::factory()->create(['area_id' => $area->id]);
-        Machine::factory()->forArea($area)->count(2)->create();
-        Machine::factory()->forArea(Area::factory()->create())->count(3)->create();
+        Machine::factory()->forArea($area)->active()->count(2)->create();
+        Machine::factory()->forArea(Area::factory()->create())->active()->count(3)->create();
 
         $token = auth('api')->login($user);
 
