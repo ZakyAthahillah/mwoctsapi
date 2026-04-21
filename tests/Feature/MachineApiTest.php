@@ -19,7 +19,7 @@ class MachineApiTest extends TestCase
 
     protected function tearDown(): void
     {
-        File::deleteDirectory(public_path('images/machines'));
+        File::deleteDirectory(public_path('machines'));
 
         parent::tearDown();
     }
@@ -130,15 +130,15 @@ class MachineApiTest extends TestCase
 
         $machineId = $response->json('data.id');
 
-        $response->assertJsonPath('data.image', 'images/machines/'.$machineId.'/front.png')
-            ->assertJsonPath('data.image_side', 'images/machines/'.$machineId.'/side.png');
+        $response->assertJsonPath('data.image', 'machines/'.$machineId.'/front.png')
+            ->assertJsonPath('data.image_side', 'machines/'.$machineId.'/side.png');
 
         $this->assertDatabaseHas('machines', [
             'code' => 'MCH001',
             'name' => 'Mesin Potong',
             'area_id' => $area->id,
-            'image' => 'images/machines/'.$machineId.'/front.png',
-            'image_side' => 'images/machines/'.$machineId.'/side.png',
+            'image' => 'machines/'.$machineId.'/front.png',
+            'image_side' => 'machines/'.$machineId.'/side.png',
         ]);
     }
 
@@ -277,8 +277,8 @@ class MachineApiTest extends TestCase
 
         $this->assertNotNull($imagePath);
         $this->assertNotNull($imageSidePath);
-        $this->assertStringContainsString('images/machines/'.$machineId.'/', $imagePath);
-        $this->assertStringContainsString('images/machines/'.$machineId.'/', $imageSidePath);
+        $this->assertStringContainsString('machines/'.$machineId.'/', $imagePath);
+        $this->assertStringContainsString('machines/'.$machineId.'/', $imageSidePath);
         $this->assertFileExists(public_path((string) $imagePath));
         $this->assertFileExists(public_path((string) $imageSidePath));
     }
@@ -837,8 +837,8 @@ class MachineApiTest extends TestCase
         $machine = Machine::factory()->forArea($area)->active()->create([
             'code' => 'MCH-JOB',
             'name' => 'Machine Job',
-            'image' => 'images/machines/1/front.png',
-            'image_side' => 'images/machines/1/side.png',
+            'image' => 'machines/1/front.png',
+            'image_side' => 'machines/1/side.png',
         ]);
         $position = Position::factory()->forArea($area)->create();
         $frontPart = Part::factory()->forArea($area)->create([

@@ -106,7 +106,7 @@ Contoh JSON:
 }
 ```
 
-Jika `image` dan `image_side` dikirim sebagai nama file string saat create, nilai yang disimpan akan otomatis menjadi `images/machines/{id}/front.png` dan `images/machines/{id}/side.png`.
+Jika `image` dan `image_side` dikirim sebagai nama file string saat create, nilai yang disimpan akan otomatis menjadi `machines/{id}/front.png` dan `machines/{id}/side.png`.
 Jika `image`, `image_side`, atau `status` tidak dikirim saat create, API akan mengisi `image=null`, `image_side=null`, dan `status=1`.
 
 Contoh multipart form-data:
@@ -141,8 +141,8 @@ Example JSON:
   "code": "MCH001",
   "name": "Mesin Potong Update",
   "description": "Mesin update",
-  "image": "images/machines/10075/front.png",
-  "image_side": "images/machines/10075/side.png",
+  "image": "machines/10075/front.png",
+  "image_side": "machines/10075/side.png",
   "status": 1,
   "parts": {
     "id": [1, 2],
@@ -181,8 +181,8 @@ Toggle machine status between `99` and `1`.
 - `description`, `image`, and `image_side` may be `null`.
 - `status` pada create akan default ke `1` jika tidak dikirim.
 - `position_id` optional dan bisa berisi 1 atau lebih `position.id` aktif dari area user yang login.
-- Saat `image` atau `image_side` dikirim sebagai file upload pada endpoint create, file disimpan ke `public/images/machines/{id}`.
-- Nilai kolom `image` dan `image_side` akan disimpan sebagai path relatif, misalnya `images/machines/{id}/front.jpeg`.
+- Saat `image` atau `image_side` dikirim sebagai file upload pada endpoint create, file disimpan ke `public/machines/{id}`.
+- Nilai kolom `image` dan `image_side` akan disimpan sebagai path relatif, misalnya `machines/{id}/front.jpeg`.
 - Untuk menampilkan di web, gabungkan dengan base URL aplikasi, misalnya `{{ url($machine->image) }}` di Blade atau `window.location.origin + '/' + machine.image` di frontend.
 - `GET /api/machines/{id}/detail` includes `parts` for front image pins and `parts_side` for side image pins.
 - Machine responses include `area_name` when the related area exists.

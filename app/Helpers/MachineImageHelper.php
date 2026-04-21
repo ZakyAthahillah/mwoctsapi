@@ -25,7 +25,7 @@ class MachineImageHelper
         if ($request->hasFile($field)) {
             /** @var UploadedFile $file */
             $file = $request->file($field);
-            $directory = public_path('images/machines/'.$machine->id);
+            $directory = public_path('machines/'.$machine->id);
 
             File::ensureDirectoryExists($directory);
 
@@ -34,7 +34,7 @@ class MachineImageHelper
             $fileName = $field.'-'.Str::uuid().'.'.$safeExtension;
             $file->move($directory, $fileName);
 
-            return 'images/machines/'.$machine->id.'/'.$fileName;
+            return 'machines/'.$machine->id.'/'.$fileName;
         }
 
         if ($request->exists($field)) {
@@ -55,6 +55,6 @@ class MachineImageHelper
         $trimmedValue = trim($value);
         $fileName = basename(str_replace('\\', '/', $trimmedValue));
 
-        return 'images/machines/'.$machine->id.'/'.$fileName;
+        return 'machines/'.$machine->id.'/'.$fileName;
     }
 }

@@ -640,8 +640,8 @@ POST /api/machines
 }
 
 Saved values example for string input:
-image=images/machines/{id}/front.png
-image_side=images/machines/{id}/side.png
+image=machines/{id}/front.png
+image_side=machines/{id}/side.png
 
 Create machine with file upload
 POST /api/machines
@@ -661,8 +661,8 @@ position_id[]=2
 status=1
 
 Saved values example:
-image=images/machines/10075/front.jpeg
-image_side=images/machines/10075/side.jpeg
+image=machines/10075/front.jpeg
+image_side=machines/10075/side.jpeg
 
 Update machine
 PUT /api/machines/{machine}
@@ -671,8 +671,8 @@ PUT /api/machines/{machine}
   "code": "MCH001",
   "name": "Mesin Potong Update",
   "description": "Mesin update",
-  "image": "images/machines/10075/front.png",
-  "image_side": "images/machines/10075/side.png",
+  "image": "machines/10075/front.png",
+  "image_side": "machines/10075/side.png",
   "status": 1,
   "parts": {
     "id": [1, 2],
@@ -690,8 +690,8 @@ PUT /api/machines/{machine}
   "code": "MCH001",
   "name": "Mesin Potong Update",
   "description": "Mesin update",
-  "image": "images/machines/10075/front.png",
-  "image_side": "images/machines/10075/side.png",
+  "image": "machines/10075/front.png",
+  "image_side": "machines/10075/side.png",
   "status": 1
 }
 
