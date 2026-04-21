@@ -3,10 +3,11 @@
 namespace Tests\Feature;
 
 use App\Models\Area;
+use App\Models\Division;
+use App\Models\Part;
 use App\Models\Reason;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class ReasonApiTest extends TestCase
@@ -16,7 +17,7 @@ class ReasonApiTest extends TestCase
     public function test_authenticated_user_can_list_reasons_with_pagination(): void
     {
         $area = Area::factory()->create();
-        $division = \App\Models\Division::factory()->forArea($area)->create();
+        $division = Division::factory()->forArea($area)->create();
         $user = User::factory()->create(['area_id' => $area->id]);
         Reason::factory()->forArea($area)->count(12)->create(['division_id' => $division->id]);
         Reason::factory()->forArea($area)->deletedStatus()->create(['division_id' => $division->id]);
@@ -40,7 +41,7 @@ class ReasonApiTest extends TestCase
     {
         $area = Area::factory()->create();
         $user = User::factory()->create(['area_id' => $area->id]);
-        $division = \App\Models\Division::factory()->forArea($area)->create();
+        $division = Division::factory()->forArea($area)->create();
         Reason::factory()->forArea($area)->create(['division_id' => $division->id, 'code' => 'RSN001', 'status' => 1]);
         Reason::factory()->forArea($area)->create(['division_id' => $division->id, 'code' => 'RSN002', 'status' => 0]);
         Reason::factory()->forArea($area)->create(['division_id' => $division->id, 'code' => 'RSN011', 'status' => 11]);
@@ -57,9 +58,10 @@ class ReasonApiTest extends TestCase
     public function test_authenticated_user_can_filter_reasons_by_area(): void
     {
         $area = Area::factory()->create();
-        $division = \App\Models\Division::factory()->forArea($area)->create();
+        $division = Division::factory()->forArea($area)->create();
         $user = User::factory()->create(['area_id' => $area->id]);
-        Reason::factory()->forArea($area)->count(2)->create(['division_id' => $division->id]);
+        $reasons = Reason::factory()->forArea($area)->count(2)->create(['division_id' => $division->id]);
+        $reasons->each(fn (Reason $reason) => $reason->divisions()->sync([$division->id]));
         Reason::factory()->count(3)->create();
 
         $token = auth('api')->login($user);
@@ -77,19 +79,23 @@ class ReasonApiTest extends TestCase
             'name' => 'Area Alasan',
         ]);
         $user = User::factory()->create(['area_id' => $area->id]);
-        $divisionId = DB::table('divisions')->insertGetId([
-            'area_id' => $area->id,
+        $divisionOne = Division::factory()->forArea($area)->create([
             'code' => 'DIV777',
             'name' => 'Divisi Alasan',
-            'status' => 1,
-            'created_at' => now(),
-            'updated_at' => now(),
+        ]);
+        $divisionTwo = Division::factory()->forArea($area)->create([
+            'name' => 'Divisi Tambahan',
+        ]);
+        $part = Part::factory()->forArea($area)->create([
+            'name' => 'HC Blower',
         ]);
         $reason = Reason::factory()->create([
             'area_id' => $area->id,
             'code' => 'RSN001',
-            'division_id' => $divisionId,
+            'division_id' => $divisionOne->id,
         ]);
+        $reason->divisions()->sync([$divisionOne->id, $divisionTwo->id]);
+        $reason->parts()->sync([$part->id]);
 
         $token = auth('api')->login($user);
 
@@ -100,20 +106,30 @@ class ReasonApiTest extends TestCase
             ->assertJsonPath('success', true)
             ->assertJsonPath('data.code', 'RSN001')
             ->assertJsonPath('data.area_name', 'Area Alasan')
-            ->assertJsonPath('data.division_name', 'Divisi Alasan');
+            ->assertJsonPath('data.division_id.0', (string) $divisionOne->id)
+            ->assertJsonPath('data.division_id.1', (string) $divisionTwo->id)
+            ->assertJsonPath('data.division_name.0', 'Divisi Alasan')
+            ->assertJsonPath('data.division_name.1', 'Divisi Tambahan')
+            ->assertJsonPath('data.part_id.0', (string) $part->id)
+            ->assertJsonPath('data.part_name.0', 'HC Blower');
     }
 
     public function test_authenticated_user_can_create_reason(): void
     {
         $area = Area::factory()->create();
         $user = User::factory()->create(['area_id' => $area->id]);
-        $divisionId = DB::table('divisions')->insertGetId([
-            'area_id' => $area->id,
+        $divisionOne = Division::factory()->forArea($area)->create([
             'code' => 'DIV001',
             'name' => 'Divisi A',
-            'status' => 1,
-            'created_at' => now(),
-            'updated_at' => now(),
+        ]);
+        $divisionTwo = Division::factory()->forArea($area)->create([
+            'name' => 'Divisi B',
+        ]);
+        $partOne = Part::factory()->forArea($area)->create([
+            'name' => 'HC Blower',
+        ]);
+        $partTwo = Part::factory()->forArea($area)->create([
+            'name' => 'HC Exchanger',
         ]);
         $token = auth('api')->login($user);
 
@@ -121,20 +137,44 @@ class ReasonApiTest extends TestCase
             ->postJson('/api/reasons', [
                 'code' => 'RSN001',
                 'name' => 'Alasan A',
-                'division_id' => $divisionId,
+                'division_id' => [$divisionOne->id, $divisionTwo->id],
+                'part_id' => [$partOne->id, $partTwo->id],
                 'status' => 1,
             ]);
 
         $response->assertStatus(201)
             ->assertJsonPath('success', true)
             ->assertJsonPath('message', 'Reason created successfully')
-            ->assertJsonPath('data.code', 'RSN001');
+            ->assertJsonPath('data.code', 'RSN001')
+            ->assertJsonPath('data.division_id.0', (string) $divisionOne->id)
+            ->assertJsonPath('data.division_id.1', (string) $divisionTwo->id)
+            ->assertJsonPath('data.part_id.0', (string) $partOne->id)
+            ->assertJsonPath('data.part_id.1', (string) $partTwo->id);
 
         $this->assertDatabaseHas('reasons', [
             'code' => 'RSN001',
             'name' => 'Alasan A',
             'area_id' => $area->id,
-            'division_id' => $divisionId,
+            'division_id' => $divisionOne->id,
+        ]);
+
+        $reasonId = (int) $response->json('data.id');
+
+        $this->assertDatabaseHas('division_reason', [
+            'reason_id' => $reasonId,
+            'division_id' => $divisionOne->id,
+        ]);
+        $this->assertDatabaseHas('division_reason', [
+            'reason_id' => $reasonId,
+            'division_id' => $divisionTwo->id,
+        ]);
+        $this->assertDatabaseHas('part_reason', [
+            'reason_id' => $reasonId,
+            'part_id' => $partOne->id,
+        ]);
+        $this->assertDatabaseHas('part_reason', [
+            'reason_id' => $reasonId,
+            'part_id' => $partTwo->id,
         ]);
     }
 
@@ -158,17 +198,27 @@ class ReasonApiTest extends TestCase
     {
         $user = User::factory()->create();
         $area = Area::factory()->create();
-        $divisionId = DB::table('divisions')->insertGetId([
-            'area_id' => $area->id,
+        $oldDivision = Division::factory()->create();
+        $oldPart = Part::factory()->create();
+        $divisionOne = Division::factory()->forArea($area)->create([
             'code' => 'DIV001',
             'name' => 'Divisi A',
-            'status' => 1,
-            'created_at' => now(),
-            'updated_at' => now(),
+        ]);
+        $divisionTwo = Division::factory()->forArea($area)->create([
+            'name' => 'Divisi B',
+        ]);
+        $partOne = Part::factory()->forArea($area)->create([
+            'name' => 'Pump',
+        ]);
+        $partTwo = Part::factory()->forArea($area)->create([
+            'name' => 'Valve',
         ]);
         $reason = Reason::factory()->create([
             'code' => 'RSN001',
+            'division_id' => $oldDivision->id,
         ]);
+        $reason->divisions()->sync([$oldDivision->id]);
+        $reason->parts()->sync([$oldPart->id]);
 
         $token = auth('api')->login($user);
 
@@ -177,14 +227,74 @@ class ReasonApiTest extends TestCase
                 'area_id' => $area->id,
                 'code' => 'RSN002',
                 'name' => 'Alasan B',
-                'division_id' => $divisionId,
+                'division_id' => [$divisionOne->id, $divisionTwo->id],
+                'part_id' => [$partOne->id, $partTwo->id],
                 'status' => 1,
             ]);
 
         $response->assertOk()
             ->assertJsonPath('success', true)
             ->assertJsonPath('message', 'Reason updated successfully')
-            ->assertJsonPath('data.code', 'RSN002');
+            ->assertJsonPath('data.code', 'RSN002')
+            ->assertJsonPath('data.division_name.0', 'Divisi A')
+            ->assertJsonPath('data.division_name.1', 'Divisi B')
+            ->assertJsonPath('data.part_name.0', 'Pump')
+            ->assertJsonPath('data.part_name.1', 'Valve');
+
+        $this->assertDatabaseMissing('division_reason', [
+            'reason_id' => $reason->id,
+            'division_id' => $oldDivision->id,
+        ]);
+        $this->assertDatabaseMissing('part_reason', [
+            'reason_id' => $reason->id,
+            'part_id' => $oldPart->id,
+        ]);
+        $this->assertDatabaseHas('reasons', [
+            'id' => $reason->id,
+            'division_id' => $divisionOne->id,
+        ]);
+        $this->assertDatabaseHas('division_reason', [
+            'reason_id' => $reason->id,
+            'division_id' => $divisionOne->id,
+        ]);
+        $this->assertDatabaseHas('division_reason', [
+            'reason_id' => $reason->id,
+            'division_id' => $divisionTwo->id,
+        ]);
+        $this->assertDatabaseHas('part_reason', [
+            'reason_id' => $reason->id,
+            'part_id' => $partOne->id,
+        ]);
+        $this->assertDatabaseHas('part_reason', [
+            'reason_id' => $reason->id,
+            'part_id' => $partTwo->id,
+        ]);
+    }
+
+    public function test_create_reason_returns_validation_error_when_relation_is_outside_authenticated_area(): void
+    {
+        $area = Area::factory()->create();
+        $otherArea = Area::factory()->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
+        $foreignDivision = Division::factory()->forArea($otherArea)->create();
+        $foreignPart = Part::factory()->forArea($otherArea)->create();
+        $token = auth('api')->login($user);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->postJson('/api/reasons', [
+                'code' => 'RSN-REL',
+                'name' => 'Alasan Relation',
+                'division_id' => [$foreignDivision->id],
+                'part_id' => [$foreignPart->id],
+                'status' => 1,
+            ]);
+
+        $response->assertStatus(400)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('message', 'Bad request')
+            ->assertJsonStructure([
+                'errors' => ['division_id.0', 'part_id.0'],
+            ]);
     }
 
     public function test_authenticated_user_cannot_update_deleted_reason(): void

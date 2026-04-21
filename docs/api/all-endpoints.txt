@@ -603,6 +603,7 @@ Get machine detail with mapped parts
 GET /api/machines/{machine}/detail
 
 Returned detail includes front pins in data.parts and side pins in data.parts_side.
+Returned detail also includes data.position_id and data.position_name arrays.
 
 Get machine positions
 GET /api/machines/{machine}/positions?term=front&selected=2
@@ -729,6 +730,8 @@ POST /api/operations
 {
   "code": "OPR001",
   "name": "Pekerjaan A",
+  "division_id": [1, 2],
+  "part_id": [1, 2],
   "status": 1
 }
 
@@ -738,8 +741,14 @@ PUT /api/operations/{operation}
   "area_id": 1,
   "code": "OPR001",
   "name": "Pekerjaan A Update",
+  "division_id": [1, 2],
+  "part_id": [1, 2],
   "status": 1
 }
+
+Get operation detail
+GET /api/operations/{operation}
+Returned detail includes division_id, division_name, part_id, and part_name arrays.
 
 Delete operation
 DELETE /api/operations/{operation}
@@ -755,12 +764,18 @@ PUT /api/part_setstatus/{part}
 List parts
 GET /api/parts?per_page=10&search=part
 
+Get part detail
+GET /api/parts/{part}
+Returned detail includes operation_id, operation_name, reason_id, and reason_name arrays.
+
 Create part
 POST /api/parts
 {
   "code": "PRT001",
   "name": "Part A",
   "description": "Deskripsi part",
+  "operation_id": [1, 2],
+  "reason_id": [1, 2],
   "status": 1
 }
 
@@ -771,6 +786,8 @@ PUT /api/parts/{part}
   "code": "PRT001",
   "name": "Part A Update",
   "description": "Deskripsi part update",
+  "operation_id": [1, 2],
+  "reason_id": [1, 2],
   "status": 1
 }
 
@@ -793,7 +810,8 @@ POST /api/reasons
 {
   "code": "RSN001",
   "name": "Alasan A",
-  "division_id": 1,
+  "division_id": [1, 2],
+  "part_id": [1, 2],
   "status": 1
 }
 
@@ -803,9 +821,14 @@ PUT /api/reasons/{reason}
   "area_id": 1,
   "code": "RSN001",
   "name": "Alasan A Update",
-  "division_id": 1,
+  "division_id": [1, 2],
+  "part_id": [1, 2],
   "status": 1
 }
+
+Get reason detail
+GET /api/reasons/{reason}
+Returned detail includes division_id, division_name, part_id, and part_name arrays.
 
 Delete reason
 DELETE /api/reasons/{reason}

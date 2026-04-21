@@ -44,6 +44,17 @@ Query parameters:
 
 Get a single part detail.
 
+Detail responses include assigned operations and reasons:
+
+```json
+{
+  "operation_id": ["1", "2"],
+  "operation_name": ["Check Motor", "Clean Unit"],
+  "reason_id": ["1", "2"],
+  "reason_name": ["Broken", "Leaking"]
+}
+```
+
 ### POST `/api/parts`
 
 Create a new part.
@@ -55,6 +66,8 @@ Request body:
   "code": "PRT001",
   "name": "Part A",
   "description": "Deskripsi part",
+  "operation_id": [1, 2],
+  "reason_id": [1, 2],
   "status": 1
 }
 ```
@@ -62,6 +75,22 @@ Request body:
 ### PUT `/api/parts/{id}`
 
 Update a part.
+
+Request body:
+
+```json
+{
+  "area_id": 1,
+  "code": "PRT001",
+  "name": "Part A Update",
+  "description": "Deskripsi part update",
+  "operation_id": [1, 2],
+  "reason_id": [1, 2],
+  "status": 1
+}
+```
+
+When `operation_id` or `reason_id` is provided, the part relation is replaced with the submitted IDs.
 
 ### DELETE `/api/parts/{id}`
 

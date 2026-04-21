@@ -149,7 +149,7 @@ class MachineController extends Controller
                 return ApiResponseHelper::error('Resource not found', null, 404);
             }
 
-            $machine->load('area');
+            $machine->load(['area', 'positions']);
 
             return ApiResponseHelper::success('Data retrieved successfully', MachineDataHelper::transform($machine));
         } catch (\Throwable $exception) {
@@ -417,7 +417,7 @@ class MachineController extends Controller
                 return ApiResponseHelper::error('Resource not found', null, 404);
             }
 
-            $machine->load('area');
+            $machine->load(['area', 'positions']);
 
             $parts = DB::table('machine_parts as machinePart')
                 ->join('parts as part', 'part.id', '=', 'machinePart.part_id')

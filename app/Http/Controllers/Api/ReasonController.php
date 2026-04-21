@@ -26,7 +26,12 @@ class ReasonController extends Controller
                 ->with(['area', 'division'])
                 ->where('status', '<>', 11)
                 ->when($user?->area_id !== null, fn ($query) => $query->where('area_id', $user->area_id), fn ($query) => $query->whereNull('area_id'))
-                ->when($divisionId !== null && $divisionId !== '', fn ($query) => $query->where('division_id', $divisionId))
+                ->when($divisionId !== null && $divisionId !== '', function ($query) use ($divisionId) {
+                    $query->where(function ($subQuery) use ($divisionId) {
+                        $subQuery->where('division_id', $divisionId)
+                            ->orWhereHas('divisions', fn ($divisionQuery) => $divisionQuery->where('divisions.id', $divisionId));
+                    });
+                })
                 ->when($search !== '', function ($query) use ($search) {
                     $query->where(function ($subQuery) use ($search) {
                         $subQuery->where('code', 'like', '%'.$search.'%')
@@ -63,7 +68,12 @@ class ReasonController extends Controller
                 ->with(['area', 'division'])
                 ->where('status', '<>', 99)
                 ->when($user?->area_id !== null, fn ($query) => $query->where('area_id', $user->area_id), fn ($query) => $query->whereNull('area_id'))
-                ->when($divisionId !== null && $divisionId !== '', fn ($query) => $query->where('division_id', $divisionId))
+                ->when($divisionId !== null && $divisionId !== '', function ($query) use ($divisionId) {
+                    $query->where(function ($subQuery) use ($divisionId) {
+                        $subQuery->where('division_id', $divisionId)
+                            ->orWhereHas('divisions', fn ($divisionQuery) => $divisionQuery->where('divisions.id', $divisionId));
+                    });
+                })
                 ->when($search !== '', function ($query) use ($search) {
                     $query->where(function ($subQuery) use ($search) {
                         $subQuery->where('code', 'like', '%'.$search.'%')
@@ -91,16 +101,23 @@ class ReasonController extends Controller
     {
         try {
             $reason = DB::transaction(function () use ($request) {
-                return Reason::create([
+                $divisionIds = array_values($request->validated('division_id') ?? []);
+
+                $reason = Reason::create([
                     'area_id' => auth('api')->user()?->area_id,
                     'code' => $request->string('code')->toString(),
                     'name' => $request->string('name')->toString(),
-                    'division_id' => $request->input('division_id'),
+                    'division_id' => $divisionIds[0] ?? null,
                     'status' => $request->integer('status'),
                 ]);
+
+                $reason->divisions()->sync($divisionIds);
+                $reason->parts()->sync($request->validated('part_id') ?? []);
+
+                return $reason;
             });
 
-            $reason->load(['area', 'division']);
+            $reason->load(['area', 'division', 'divisions', 'parts']);
 
             return ApiResponseHelper::success('Reason created successfully', ReasonDataHelper::transform($reason), null, 201);
         } catch (\Throwable $exception) {
@@ -119,7 +136,7 @@ class ReasonController extends Controller
                 return ApiResponseHelper::error('Resource not found', null, 404);
             }
 
-            $reason->load(['area', 'division']);
+            $reason->load(['area', 'division', 'divisions', 'parts']);
 
             return ApiResponseHelper::success('Data retrieved successfully', ReasonDataHelper::transform($reason));
         } catch (\Throwable $exception) {
@@ -137,16 +154,21 @@ class ReasonController extends Controller
             }
 
             DB::transaction(function () use ($request, $reason) {
+                $divisionIds = array_values($request->validated('division_id') ?? []);
+
                 $reason->update([
                     'area_id' => $request->input('area_id'),
                     'code' => $request->string('code')->toString(),
                     'name' => $request->string('name')->toString(),
-                    'division_id' => $request->input('division_id'),
+                    'division_id' => $divisionIds[0] ?? null,
                     'status' => $request->integer('status'),
                 ]);
+
+                $reason->divisions()->sync($divisionIds);
+                $reason->parts()->sync($request->validated('part_id') ?? []);
             });
 
-            $reason->refresh()->load(['area', 'division']);
+            $reason->refresh()->load(['area', 'division', 'divisions', 'parts']);
 
             return ApiResponseHelper::success('Reason updated successfully', ReasonDataHelper::transform($reason));
         } catch (\Throwable $exception) {

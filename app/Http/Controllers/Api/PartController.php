@@ -89,16 +89,21 @@ class PartController extends Controller
     {
         try {
             $part = DB::transaction(function () use ($request) {
-                return Part::create([
+                $part = Part::create([
                     'area_id' => auth('api')->user()?->area_id,
                     'code' => $request->string('code')->toString(),
                     'name' => $request->string('name')->toString(),
                     'description' => $request->input('description'),
                     'status' => $request->integer('status'),
                 ]);
+
+                $part->operations()->sync($request->validated('operation_id') ?? []);
+                $part->reasons()->sync($request->validated('reason_id') ?? []);
+
+                return $part;
             });
 
-            $part->load('area');
+            $part->load(['area', 'operations', 'reasons']);
 
             return ApiResponseHelper::success('Part created successfully', PartDataHelper::transform($part), null, 201);
         } catch (\Throwable $exception) {
@@ -117,7 +122,7 @@ class PartController extends Controller
                 return ApiResponseHelper::error('Resource not found', null, 404);
             }
 
-            $part->load('area');
+            $part->load(['area', 'operations', 'reasons']);
 
             return ApiResponseHelper::success('Data retrieved successfully', PartDataHelper::transform($part));
         } catch (\Throwable $exception) {
@@ -142,9 +147,12 @@ class PartController extends Controller
                     'description' => $request->input('description'),
                     'status' => $request->integer('status'),
                 ]);
+
+                $part->operations()->sync($request->validated('operation_id') ?? []);
+                $part->reasons()->sync($request->validated('reason_id') ?? []);
             });
 
-            $part->refresh()->load('area');
+            $part->refresh()->load(['area', 'operations', 'reasons']);
 
             return ApiResponseHelper::success('Part updated successfully', PartDataHelper::transform($part));
         } catch (\Throwable $exception) {

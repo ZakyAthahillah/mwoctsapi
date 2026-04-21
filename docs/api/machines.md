@@ -44,6 +44,15 @@ Query parameters:
 
 Get a single machine detail.
 
+The detail response includes assigned machine positions as parallel arrays:
+
+```json
+{
+  "position_id": ["1", "2"],
+  "position_name": ["Posisi A", "Posisi B"]
+}
+```
+
 ### GET `/api/machines/full-data-array`
 
 Get machine option list for selector/search use cases and legacy machine lookups.
@@ -62,7 +71,7 @@ Query parameters:
 
 ### GET `/api/machines/{id}/detail`
 
-Get a single machine detail with mapped front and side parts.
+Get a single machine detail with mapped front and side parts. This response also includes `position_id` and `position_name` arrays.
 
 ### GET `/api/machines/{id}/positions`
 

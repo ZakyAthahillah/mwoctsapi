@@ -87,15 +87,20 @@ class OperationController extends Controller
     {
         try {
             $operation = DB::transaction(function () use ($request) {
-                return Operation::create([
+                $operation = Operation::create([
                     'area_id' => auth('api')->user()?->area_id,
                     'code' => $request->string('code')->toString(),
                     'name' => $request->string('name')->toString(),
                     'status' => $request->integer('status'),
                 ]);
+
+                $operation->divisions()->sync($request->validated('division_id', []));
+                $operation->parts()->sync($request->validated('part_id', []));
+
+                return $operation;
             });
 
-            $operation->load('area');
+            $operation->load(['area', 'divisions', 'parts']);
 
             return ApiResponseHelper::success('Operation created successfully', OperationDataHelper::transform($operation), null, 201);
         } catch (\Throwable $exception) {
@@ -114,7 +119,7 @@ class OperationController extends Controller
                 return ApiResponseHelper::error('Resource not found', null, 404);
             }
 
-            $operation->load('area');
+            $operation->load(['area', 'divisions', 'parts']);
 
             return ApiResponseHelper::success('Data retrieved successfully', OperationDataHelper::transform($operation));
         } catch (\Throwable $exception) {
@@ -138,9 +143,12 @@ class OperationController extends Controller
                     'name' => $request->string('name')->toString(),
                     'status' => $request->integer('status'),
                 ]);
+
+                $operation->divisions()->sync($request->validated('division_id', []));
+                $operation->parts()->sync($request->validated('part_id', []));
             });
 
-            $operation->refresh()->load('area');
+            $operation->refresh()->load(['area', 'divisions', 'parts']);
 
             return ApiResponseHelper::success('Operation updated successfully', OperationDataHelper::transform($operation));
         } catch (\Throwable $exception) {

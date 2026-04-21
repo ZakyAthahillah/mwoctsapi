@@ -3,7 +3,9 @@
 namespace Tests\Feature;
 
 use App\Models\Area;
+use App\Models\Division;
 use App\Models\Operation;
+use App\Models\Part;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -69,11 +71,20 @@ class OperationApiTest extends TestCase
 
     public function test_authenticated_user_can_view_operation_detail(): void
     {
+        $area = Area::factory()->create();
         $operation = Operation::factory()->create([
-            'area_id' => $area = Area::factory()->create()->id,
+            'area_id' => $area->id,
             'code' => 'OPR001',
         ]);
-        $user = User::factory()->create(['area_id' => $area]);
+        $division = Division::factory()->forArea($area)->create([
+            'name' => 'Mechanical',
+        ]);
+        $part = Part::factory()->forArea($area)->create([
+            'name' => 'HC Blower',
+        ]);
+        $operation->divisions()->sync([$division->id]);
+        $operation->parts()->sync([$part->id]);
+        $user = User::factory()->create(['area_id' => $area->id]);
 
         $token = auth('api')->login($user);
 
@@ -82,31 +93,72 @@ class OperationApiTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('success', true)
-            ->assertJsonPath('data.code', 'OPR001');
+            ->assertJsonPath('data.code', 'OPR001')
+            ->assertJsonPath('data.division_id.0', (string) $division->id)
+            ->assertJsonPath('data.division_name.0', 'Mechanical')
+            ->assertJsonPath('data.part_id.0', (string) $part->id)
+            ->assertJsonPath('data.part_name.0', 'HC Blower');
     }
 
     public function test_authenticated_user_can_create_operation(): void
     {
         $area = Area::factory()->create();
         $user = User::factory()->create(['area_id' => $area->id]);
+        $divisionOne = Division::factory()->forArea($area)->create([
+            'name' => 'Mechanical',
+        ]);
+        $divisionTwo = Division::factory()->forArea($area)->create([
+            'name' => 'Electrical',
+        ]);
+        $partOne = Part::factory()->forArea($area)->create([
+            'name' => 'HC Blower',
+        ]);
+        $partTwo = Part::factory()->forArea($area)->create([
+            'name' => 'HC Exchanger',
+        ]);
         $token = auth('api')->login($user);
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/operations', [
                 'code' => 'OPR001',
                 'name' => 'Pekerjaan A',
+                'division_id' => [$divisionOne->id, $divisionTwo->id],
+                'part_id' => [$partOne->id, $partTwo->id],
                 'status' => 1,
             ]);
 
         $response->assertStatus(201)
             ->assertJsonPath('success', true)
             ->assertJsonPath('message', 'Operation created successfully')
-            ->assertJsonPath('data.code', 'OPR001');
+            ->assertJsonPath('data.code', 'OPR001')
+            ->assertJsonPath('data.division_id.0', (string) $divisionOne->id)
+            ->assertJsonPath('data.division_id.1', (string) $divisionTwo->id)
+            ->assertJsonPath('data.part_id.0', (string) $partOne->id)
+            ->assertJsonPath('data.part_id.1', (string) $partTwo->id);
 
         $this->assertDatabaseHas('operations', [
             'code' => 'OPR001',
             'name' => 'Pekerjaan A',
             'area_id' => $area->id,
+        ]);
+
+        $operationId = (int) $response->json('data.id');
+
+        $this->assertDatabaseHas('division_operation', [
+            'operation_id' => $operationId,
+            'division_id' => $divisionOne->id,
+        ]);
+        $this->assertDatabaseHas('division_operation', [
+            'operation_id' => $operationId,
+            'division_id' => $divisionTwo->id,
+        ]);
+        $this->assertDatabaseHas('operation_part', [
+            'operation_id' => $operationId,
+            'part_id' => $partOne->id,
+        ]);
+        $this->assertDatabaseHas('operation_part', [
+            'operation_id' => $operationId,
+            'part_id' => $partTwo->id,
         ]);
     }
 
@@ -133,6 +185,22 @@ class OperationApiTest extends TestCase
         $operation = Operation::factory()->create([
             'code' => 'OPR001',
         ]);
+        $oldDivision = Division::factory()->create();
+        $oldPart = Part::factory()->create();
+        $newDivisionOne = Division::factory()->forArea($area)->create([
+            'name' => 'Production',
+        ]);
+        $newDivisionTwo = Division::factory()->forArea($area)->create([
+            'name' => 'Maintenance',
+        ]);
+        $newPartOne = Part::factory()->forArea($area)->create([
+            'name' => 'Pump',
+        ]);
+        $newPartTwo = Part::factory()->forArea($area)->create([
+            'name' => 'Valve',
+        ]);
+        $operation->divisions()->sync([$oldDivision->id]);
+        $operation->parts()->sync([$oldPart->id]);
 
         $token = auth('api')->login($user);
 
@@ -141,13 +209,70 @@ class OperationApiTest extends TestCase
                 'area_id' => $area->id,
                 'code' => 'OPR002',
                 'name' => 'Pekerjaan B',
+                'division_id' => [$newDivisionOne->id, $newDivisionTwo->id],
+                'part_id' => [$newPartOne->id, $newPartTwo->id],
                 'status' => 1,
             ]);
 
         $response->assertOk()
             ->assertJsonPath('success', true)
             ->assertJsonPath('message', 'Operation updated successfully')
-            ->assertJsonPath('data.code', 'OPR002');
+            ->assertJsonPath('data.code', 'OPR002')
+            ->assertJsonPath('data.division_name.0', 'Production')
+            ->assertJsonPath('data.division_name.1', 'Maintenance')
+            ->assertJsonPath('data.part_name.0', 'Pump')
+            ->assertJsonPath('data.part_name.1', 'Valve');
+
+        $this->assertDatabaseMissing('division_operation', [
+            'operation_id' => $operation->id,
+            'division_id' => $oldDivision->id,
+        ]);
+        $this->assertDatabaseMissing('operation_part', [
+            'operation_id' => $operation->id,
+            'part_id' => $oldPart->id,
+        ]);
+        $this->assertDatabaseHas('division_operation', [
+            'operation_id' => $operation->id,
+            'division_id' => $newDivisionOne->id,
+        ]);
+        $this->assertDatabaseHas('division_operation', [
+            'operation_id' => $operation->id,
+            'division_id' => $newDivisionTwo->id,
+        ]);
+        $this->assertDatabaseHas('operation_part', [
+            'operation_id' => $operation->id,
+            'part_id' => $newPartOne->id,
+        ]);
+        $this->assertDatabaseHas('operation_part', [
+            'operation_id' => $operation->id,
+            'part_id' => $newPartTwo->id,
+        ]);
+    }
+
+    public function test_create_operation_returns_validation_error_when_relation_is_outside_authenticated_area(): void
+    {
+        $area = Area::factory()->create();
+        $otherArea = Area::factory()->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
+        $foreignDivision = Division::factory()->forArea($otherArea)->create();
+        $foreignPart = Part::factory()->forArea($otherArea)->create();
+        $token = auth('api')->login($user);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->postJson('/api/operations', [
+                'code' => 'OPR-REL',
+                'name' => 'Pekerjaan Relation',
+                'division_id' => [$foreignDivision->id],
+                'part_id' => [$foreignPart->id],
+                'status' => 1,
+            ]);
+
+        $response->assertStatus(400)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('message', 'Bad request')
+            ->assertJsonStructure([
+                'errors' => ['division_id.0', 'part_id.0'],
+            ]);
     }
 
     public function test_authenticated_user_cannot_update_deleted_operation(): void

@@ -44,6 +44,17 @@ Query parameters:
 
 Get a single operation detail.
 
+Detail responses include assigned divisions and parts/equipment:
+
+```json
+{
+  "division_id": ["1", "2"],
+  "division_name": ["Mechanical", "Electrical"],
+  "part_id": ["1", "2"],
+  "part_name": ["HC BLOWER", "HC EXCHANGER"]
+}
+```
+
 ### POST `/api/operations`
 
 Create a new operation.
@@ -54,6 +65,8 @@ Request body:
 {
   "code": "OPR001",
   "name": "Pekerjaan A",
+  "division_id": [1, 2],
+  "part_id": [1, 2],
   "status": 1
 }
 ```
@@ -61,6 +74,21 @@ Request body:
 ### PUT `/api/operations/{id}`
 
 Update an operation.
+
+Request body:
+
+```json
+{
+  "area_id": 1,
+  "code": "OPR001",
+  "name": "Pekerjaan A Update",
+  "division_id": [1, 2],
+  "part_id": [1, 2],
+  "status": 1
+}
+```
+
+When `division_id` or `part_id` is provided, the operation relation is replaced with the submitted IDs.
 
 ### DELETE `/api/operations/{id}`
 
@@ -76,4 +104,6 @@ Toggle operation status between `99` and `1`.
 - `GET /api/operation_active` excludes records with `status = 11`.
 - `PUT /api/operation_setstatus/{id}` only supports current status `1` and `99`.
 - `GET` dan `POST` menggunakan `area_id` dari user login.
+- `division_id` optional dan bisa berisi satu atau lebih `division.id` aktif dari area operation.
+- `part_id` optional dan bisa berisi satu atau lebih `part.id` aktif dari area operation.
 - Validation is required for create and update requests.

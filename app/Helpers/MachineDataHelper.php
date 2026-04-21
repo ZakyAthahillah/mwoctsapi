@@ -8,7 +8,7 @@ class MachineDataHelper
 {
     public static function transform(Machine $machine): array
     {
-        return [
+        $payload = [
             'id' => (string) $machine->id,
             'area_id' => $machine->area_id !== null ? (string) $machine->area_id : null,
             'area_name' => $machine->area?->name,
@@ -21,5 +21,18 @@ class MachineDataHelper
             'created_at' => optional($machine->created_at)?->format('Y-m-d H:i:s'),
             'updated_at' => optional($machine->updated_at)?->format('Y-m-d H:i:s'),
         ];
+
+        if ($machine->relationLoaded('positions')) {
+            $payload['position_id'] = $machine->positions
+                ->map(fn ($position) => (string) $position->id)
+                ->values()
+                ->all();
+            $payload['position_name'] = $machine->positions
+                ->map(fn ($position) => $position->name)
+                ->values()
+                ->all();
+        }
+
+        return $payload;
     }
 }

@@ -104,6 +104,13 @@ class MachineApiTest extends TestCase
             'area_id' => $area->id,
             'code' => 'MCH001',
         ]);
+        $positionOne = Position::factory()->forArea($area)->create([
+            'name' => 'Posisi A',
+        ]);
+        $positionTwo = Position::factory()->forArea($area)->create([
+            'name' => 'Posisi B',
+        ]);
+        $machine->positions()->sync([$positionOne->id, $positionTwo->id]);
 
         $token = auth('api')->login($user);
 
@@ -113,7 +120,11 @@ class MachineApiTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('success', true)
             ->assertJsonPath('data.code', 'MCH001')
-            ->assertJsonPath('data.area_name', 'Area Utility');
+            ->assertJsonPath('data.area_name', 'Area Utility')
+            ->assertJsonPath('data.position_id.0', (string) $positionOne->id)
+            ->assertJsonPath('data.position_id.1', (string) $positionTwo->id)
+            ->assertJsonPath('data.position_name.0', 'Posisi A')
+            ->assertJsonPath('data.position_name.1', 'Posisi B');
     }
 
     public function test_admin_can_create_machine(): void
@@ -964,6 +975,13 @@ class MachineApiTest extends TestCase
             'code' => 'MCH-DETAIL',
             'name' => 'Machine Detail',
         ]);
+        $positionOne = Position::factory()->forArea($area)->create([
+            'name' => 'Posisi Detail A',
+        ]);
+        $positionTwo = Position::factory()->forArea($area)->create([
+            'name' => 'Posisi Detail B',
+        ]);
+        $machine->positions()->sync([$positionOne->id, $positionTwo->id]);
         $frontPart = Part::factory()->forArea($area)->create([
             'code' => 'PRT-FRONT',
             'name' => 'Front Part',
@@ -996,6 +1014,10 @@ class MachineApiTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('success', true)
             ->assertJsonPath('data.code', 'MCH-DETAIL')
+            ->assertJsonPath('data.position_id.0', (string) $positionOne->id)
+            ->assertJsonPath('data.position_id.1', (string) $positionTwo->id)
+            ->assertJsonPath('data.position_name.0', 'Posisi Detail A')
+            ->assertJsonPath('data.position_name.1', 'Posisi Detail B')
             ->assertJsonPath('data.parts.0.code', 'PRT-FRONT')
             ->assertJsonPath('data.parts.0.x', '11')
             ->assertJsonPath('data.parts_side.0.code', 'PRT-SIDE')

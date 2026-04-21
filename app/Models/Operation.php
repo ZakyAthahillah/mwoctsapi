@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Operation extends Model
 {
@@ -25,5 +26,15 @@ class Operation extends Model
     public function area(): BelongsTo
     {
         return $this->belongsTo(Area::class);
+    }
+
+    public function divisions(): BelongsToMany
+    {
+        return $this->belongsToMany(Division::class, 'division_operation', 'operation_id', 'division_id');
+    }
+
+    public function parts(): BelongsToMany
+    {
+        return $this->belongsToMany(Part::class, 'operation_part', 'operation_id', 'part_id');
     }
 }
