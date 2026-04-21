@@ -319,6 +319,65 @@ class MachineApiTest extends TestCase
             ->assertJsonPath('data.code', 'MCH002');
     }
 
+    public function test_admin_can_update_machine_without_changing_its_code(): void
+    {
+        $area = Area::factory()->create();
+        $admin = User::factory()->admin()->create(['area_id' => $area->id]);
+        $machine = Machine::factory()->forArea($area)->create([
+            'code' => 'MCH-SAME',
+            'name' => 'Mesin Lama',
+        ]);
+        $token = auth('api')->login($admin);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->putJson('/api/machines/'.$machine->id, [
+                'area_id' => $area->id,
+                'code' => 'MCH-SAME',
+                'name' => 'Mesin Baru',
+                'description' => 'Update tanpa ganti code',
+                'image' => null,
+                'image_side' => null,
+                'status' => 1,
+            ]);
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('message', 'Machine updated successfully')
+            ->assertJsonPath('data.code', 'MCH-SAME')
+            ->assertJsonPath('data.name', 'Mesin Baru');
+    }
+
+    public function test_update_machine_returns_validation_error_when_code_belongs_to_another_machine(): void
+    {
+        $area = Area::factory()->create();
+        $admin = User::factory()->admin()->create(['area_id' => $area->id]);
+        Machine::factory()->forArea($area)->create([
+            'code' => 'MCH-TAKEN',
+        ]);
+        $machine = Machine::factory()->forArea($area)->create([
+            'code' => 'MCH-EDIT',
+        ]);
+        $token = auth('api')->login($admin);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->putJson('/api/machines/'.$machine->id, [
+                'area_id' => $area->id,
+                'code' => 'MCH-TAKEN',
+                'name' => 'Mesin Edit',
+                'description' => null,
+                'image' => null,
+                'image_side' => null,
+                'status' => 1,
+            ]);
+
+        $response->assertStatus(400)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('message', 'Bad request')
+            ->assertJsonStructure([
+                'errors' => ['code'],
+            ]);
+    }
+
     public function test_admin_can_update_machine_images_with_normalized_relative_paths(): void
     {
         $admin = User::factory()->admin()->create();

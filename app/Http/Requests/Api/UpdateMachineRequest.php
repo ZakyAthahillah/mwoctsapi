@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Api;
 
+use App\Models\Machine;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
@@ -49,7 +50,8 @@ class UpdateMachineRequest extends BaseApiFormRequest
 
     public function rules(): array
     {
-        $machineId = $this->route('machine')?->id;
+        $machine = $this->route('machine');
+        $machineId = $machine instanceof Machine ? $machine->id : $machine;
 
         return [
             'area_id' => ['present', 'nullable', 'integer', 'exists:areas,id'],
