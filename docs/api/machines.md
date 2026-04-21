@@ -156,6 +156,12 @@ Example JSON:
 
 When `parts.id` is provided, existing records in `machine_parts` and `machine_part_sides` for the machine are replaced. The coordinate arrays must contain the same number of items as `parts.id`.
 
+If the client sends `multipart/form-data` or cannot send nested JSON, `parts` may be sent as a JSON string:
+
+```text
+parts={"id":[1,2],"x":[12.4,55.2],"y":[22.1,66.7],"x_side":[10.4,51.2],"y_side":[20.1,61.7]}
+```
+
 ### DELETE `/api/machines/{id}`
 
 Delete a machine logically by changing `status` to `99`.

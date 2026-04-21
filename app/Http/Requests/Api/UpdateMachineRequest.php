@@ -9,6 +9,18 @@ class UpdateMachineRequest extends BaseApiFormRequest
 {
     protected function prepareForValidation(): void
     {
+        $parts = $this->input('parts');
+
+        if (is_string($parts)) {
+            $decodedParts = json_decode($parts, true);
+
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decodedParts)) {
+                $this->merge([
+                    'parts' => $decodedParts,
+                ]);
+            }
+        }
+
         $positionIds = $this->input('position_id');
 
         if ($positionIds === null && $this->exists('position_ids')) {

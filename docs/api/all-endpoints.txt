@@ -696,6 +696,11 @@ PUT /api/machines/{machine}
   "status": 1
 }
 
+Update machine pins using form-data compatible JSON string
+PUT /api/machines/{machine}
+Form field:
+parts={"id":[1,2],"x":[12.4,55.2],"y":[22.1,66.7],"x_side":[10.4,51.2],"y_side":[20.1,61.7]}
+
 Delete machine
 DELETE /api/machines/{machine}
 

@@ -520,6 +520,79 @@ class MachineApiTest extends TestCase
         ]);
     }
 
+    public function test_admin_can_update_machine_parts_from_parts_json_string(): void
+    {
+        $area = Area::factory()->create();
+        $admin = User::factory()->admin()->create(['area_id' => $area->id]);
+        $machine = Machine::factory()->forArea($area)->create([
+            'code' => 'MCH-PIN-JSON',
+        ]);
+        $partOne = Part::factory()->forArea($area)->create();
+        $partTwo = Part::factory()->forArea($area)->create();
+
+        DB::table('machine_progress')->insert([
+            'machine_id' => $machine->id,
+            'data' => 1,
+            'position' => 0,
+            'operation' => 0,
+            'reason' => 0,
+            'image' => 0,
+            'part' => 0,
+        ]);
+
+        $token = auth('api')->login($admin);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->putJson('/api/machines/'.$machine->id, [
+                'area_id' => $area->id,
+                'code' => 'MCH-PIN-JSON',
+                'name' => 'Mesin Pin JSON',
+                'description' => null,
+                'image' => null,
+                'image_side' => null,
+                'status' => 1,
+                'parts' => json_encode([
+                    'id' => [$partOne->id, $partTwo->id],
+                    'x' => [12.4, 55.2],
+                    'y' => [22.1, 66.7],
+                    'x_side' => [10.4, 51.2],
+                    'y_side' => [20.1, 61.7],
+                ]),
+            ]);
+
+        $response->assertOk()
+            ->assertJsonPath('success', true);
+
+        $this->assertDatabaseHas('machine_parts', [
+            'machine_id' => $machine->id,
+            'part_id' => $partOne->id,
+            'sort_order' => 1,
+            'pos_x' => '12.4',
+            'pos_y' => '22.1',
+        ]);
+        $this->assertDatabaseHas('machine_parts', [
+            'machine_id' => $machine->id,
+            'part_id' => $partTwo->id,
+            'sort_order' => 2,
+            'pos_x' => '55.2',
+            'pos_y' => '66.7',
+        ]);
+        $this->assertDatabaseHas('machine_part_sides', [
+            'machine_id' => $machine->id,
+            'part_id' => $partOne->id,
+            'sort_order' => 1,
+            'pos_x' => '10.4',
+            'pos_y' => '20.1',
+        ]);
+        $this->assertDatabaseHas('machine_part_sides', [
+            'machine_id' => $machine->id,
+            'part_id' => $partTwo->id,
+            'sort_order' => 2,
+            'pos_x' => '51.2',
+            'pos_y' => '61.7',
+        ]);
+    }
+
     public function test_admin_can_clear_machine_parts_with_empty_pin_payload(): void
     {
         $area = Area::factory()->create();
