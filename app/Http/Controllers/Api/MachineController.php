@@ -188,6 +188,39 @@ class MachineController extends Controller
                             'position' => $positionIds !== [] ? 1 : 0,
                         ]);
                 }
+
+                if ($request->has('parts.id')) {
+                    $partIds = $request->input('parts.id', []);
+                    $xs = $request->input('parts.x', []);
+                    $ys = $request->input('parts.y', []);
+                    $xsSide = $request->input('parts.x_side', []);
+                    $ysSide = $request->input('parts.y_side', []);
+
+                    $machine->parts()->delete();
+                    $machine->partsSide()->delete();
+
+                    foreach ($partIds as $index => $partId) {
+                        $machine->parts()->create([
+                            'part_id' => $partId,
+                            'sort_order' => $index + 1,
+                            'pos_x' => $xs[$index] ?? 0,
+                            'pos_y' => $ys[$index] ?? 0,
+                        ]);
+
+                        $machine->partsSide()->create([
+                            'part_id' => $partId,
+                            'sort_order' => $index + 1,
+                            'pos_x' => $xsSide[$index] ?? 0,
+                            'pos_y' => $ysSide[$index] ?? 0,
+                        ]);
+                    }
+
+                    DB::table('machine_progress')
+                        ->where('machine_id', $machine->id)
+                        ->update([
+                            'part' => count($partIds) > 0 ? 1 : 0,
+                        ]);
+                }
             });
 
             $machine->refresh()->load('area');
@@ -389,10 +422,31 @@ class MachineController extends Controller
                     'machinePart.pos_y',
                 ]);
 
+            $partsSide = DB::table('machine_part_sides as machinePartSide')
+                ->join('parts as part', 'part.id', '=', 'machinePartSide.part_id')
+                ->where('machinePartSide.machine_id', $machine->id)
+                ->orderBy('machinePartSide.sort_order')
+                ->get([
+                    'part.id',
+                    'part.code',
+                    'part.name',
+                    'part.description',
+                    'machinePartSide.pos_x',
+                    'machinePartSide.pos_y',
+                ]);
+
             return ApiResponseHelper::success('Data retrieved successfully', [
                 ...MachineDataHelper::transform($machine),
                 'text' => trim(($machine->code ?? '').' : '.($machine->name ?? '')),
                 'parts' => $parts->map(fn ($part) => [
+                    'id' => (string) $part->id,
+                    'code' => $part->code,
+                    'name' => $part->name,
+                    'description' => $part->description,
+                    'x' => $part->pos_x,
+                    'y' => $part->pos_y,
+                ])->values()->all(),
+                'parts_side' => $partsSide->map(fn ($part) => [
                     'id' => (string) $part->id,
                     'code' => $part->code,
                     'name' => $part->name,

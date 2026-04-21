@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Machine extends Model
 {
@@ -34,5 +35,15 @@ class Machine extends Model
     public function positions(): BelongsToMany
     {
         return $this->belongsToMany(Position::class, 'machine_position', 'machine_id', 'position_id');
+    }
+
+    public function parts(): HasMany
+    {
+        return $this->hasMany(MachinePart::class, 'machine_id');
+    }
+
+    public function partsSide(): HasMany
+    {
+        return $this->hasMany(MachinePartSide::class, 'machine_id');
     }
 }

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Area;
 use App\Models\Machine;
+use App\Models\Part;
 use App\Models\Position;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -372,6 +373,218 @@ class MachineApiTest extends TestCase
         ]);
     }
 
+    public function test_admin_can_update_machine_parts_for_front_and_side_pins(): void
+    {
+        $area = Area::factory()->create();
+        $admin = User::factory()->admin()->create(['area_id' => $area->id]);
+        $machine = Machine::factory()->forArea($area)->create([
+            'code' => 'MCH-PIN',
+        ]);
+        $oldPart = Part::factory()->forArea($area)->create();
+        $partOne = Part::factory()->forArea($area)->create([
+            'code' => 'PRT-PIN-1',
+        ]);
+        $partTwo = Part::factory()->forArea($area)->create([
+            'code' => 'PRT-PIN-2',
+        ]);
+
+        DB::table('machine_parts')->insert([
+            'machine_id' => $machine->id,
+            'part_id' => $oldPart->id,
+            'sort_order' => 1,
+            'pos_x' => '1',
+            'pos_y' => '2',
+        ]);
+        DB::table('machine_part_sides')->insert([
+            'machine_id' => $machine->id,
+            'part_id' => $oldPart->id,
+            'sort_order' => 1,
+            'pos_x' => '3',
+            'pos_y' => '4',
+        ]);
+        DB::table('machine_progress')->insert([
+            'machine_id' => $machine->id,
+            'data' => 1,
+            'position' => 0,
+            'operation' => 0,
+            'reason' => 0,
+            'image' => 0,
+            'part' => 0,
+        ]);
+
+        $token = auth('api')->login($admin);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->putJson('/api/machines/'.$machine->id, [
+                'area_id' => $area->id,
+                'code' => 'MCH-PIN',
+                'name' => 'Mesin Pin Update',
+                'description' => 'Update pin mesin',
+                'image' => null,
+                'image_side' => null,
+                'status' => 1,
+                'parts' => [
+                    'id' => [$partOne->id, $partTwo->id],
+                    'x' => [12.4, 55.2],
+                    'y' => [22.1, 66.7],
+                    'x_side' => [10.4, 51.2],
+                    'y_side' => [20.1, 61.7],
+                ],
+            ]);
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('message', 'Machine updated successfully');
+
+        $this->assertDatabaseMissing('machine_parts', [
+            'machine_id' => $machine->id,
+            'part_id' => $oldPart->id,
+        ]);
+        $this->assertDatabaseMissing('machine_part_sides', [
+            'machine_id' => $machine->id,
+            'part_id' => $oldPart->id,
+        ]);
+        $this->assertDatabaseHas('machine_parts', [
+            'machine_id' => $machine->id,
+            'part_id' => $partOne->id,
+            'sort_order' => 1,
+            'pos_x' => '12.4',
+            'pos_y' => '22.1',
+        ]);
+        $this->assertDatabaseHas('machine_parts', [
+            'machine_id' => $machine->id,
+            'part_id' => $partTwo->id,
+            'sort_order' => 2,
+            'pos_x' => '55.2',
+            'pos_y' => '66.7',
+        ]);
+        $this->assertDatabaseHas('machine_part_sides', [
+            'machine_id' => $machine->id,
+            'part_id' => $partOne->id,
+            'sort_order' => 1,
+            'pos_x' => '10.4',
+            'pos_y' => '20.1',
+        ]);
+        $this->assertDatabaseHas('machine_part_sides', [
+            'machine_id' => $machine->id,
+            'part_id' => $partTwo->id,
+            'sort_order' => 2,
+            'pos_x' => '51.2',
+            'pos_y' => '61.7',
+        ]);
+        $this->assertDatabaseHas('machine_progress', [
+            'machine_id' => $machine->id,
+            'part' => 1,
+        ]);
+    }
+
+    public function test_admin_can_clear_machine_parts_with_empty_pin_payload(): void
+    {
+        $area = Area::factory()->create();
+        $admin = User::factory()->admin()->create(['area_id' => $area->id]);
+        $machine = Machine::factory()->forArea($area)->create([
+            'code' => 'MCH-PIN-CLEAR',
+        ]);
+        $part = Part::factory()->forArea($area)->create();
+
+        DB::table('machine_parts')->insert([
+            'machine_id' => $machine->id,
+            'part_id' => $part->id,
+            'sort_order' => 1,
+            'pos_x' => '1',
+            'pos_y' => '2',
+        ]);
+        DB::table('machine_part_sides')->insert([
+            'machine_id' => $machine->id,
+            'part_id' => $part->id,
+            'sort_order' => 1,
+            'pos_x' => '3',
+            'pos_y' => '4',
+        ]);
+        DB::table('machine_progress')->insert([
+            'machine_id' => $machine->id,
+            'data' => 1,
+            'position' => 0,
+            'operation' => 0,
+            'reason' => 0,
+            'image' => 0,
+            'part' => 1,
+        ]);
+
+        $token = auth('api')->login($admin);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->putJson('/api/machines/'.$machine->id, [
+                'area_id' => $area->id,
+                'code' => 'MCH-PIN-CLEAR',
+                'name' => 'Mesin Pin Clear',
+                'description' => 'Clear pin mesin',
+                'image' => null,
+                'image_side' => null,
+                'status' => 1,
+                'parts' => [
+                    'id' => [],
+                    'x' => [],
+                    'y' => [],
+                    'x_side' => [],
+                    'y_side' => [],
+                ],
+            ]);
+
+        $response->assertOk()
+            ->assertJsonPath('success', true);
+
+        $this->assertDatabaseMissing('machine_parts', [
+            'machine_id' => $machine->id,
+            'part_id' => $part->id,
+        ]);
+        $this->assertDatabaseMissing('machine_part_sides', [
+            'machine_id' => $machine->id,
+            'part_id' => $part->id,
+        ]);
+        $this->assertDatabaseHas('machine_progress', [
+            'machine_id' => $machine->id,
+            'part' => 0,
+        ]);
+    }
+
+    public function test_update_machine_returns_validation_error_when_pin_coordinate_count_mismatches(): void
+    {
+        $area = Area::factory()->create();
+        $admin = User::factory()->admin()->create(['area_id' => $area->id]);
+        $machine = Machine::factory()->forArea($area)->create([
+            'code' => 'MCH-PIN-INVALID',
+        ]);
+        $partOne = Part::factory()->forArea($area)->create();
+        $partTwo = Part::factory()->forArea($area)->create();
+        $token = auth('api')->login($admin);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->putJson('/api/machines/'.$machine->id, [
+                'area_id' => $area->id,
+                'code' => 'MCH-PIN-INVALID',
+                'name' => 'Mesin Pin Invalid',
+                'description' => null,
+                'image' => null,
+                'image_side' => null,
+                'status' => 1,
+                'parts' => [
+                    'id' => [$partOne->id, $partTwo->id],
+                    'x' => [12.4],
+                    'y' => [22.1, 66.7],
+                    'x_side' => [10.4, 51.2],
+                    'y_side' => [20.1, 61.7],
+                ],
+            ]);
+
+        $response->assertStatus(400)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('message', 'Bad request')
+            ->assertJsonStructure([
+                'errors' => ['parts.x'],
+            ]);
+    }
+
     public function test_create_machine_returns_validation_error_when_position_is_outside_authenticated_area(): void
     {
         $area = Area::factory()->create();
@@ -473,7 +686,7 @@ class MachineApiTest extends TestCase
             'code' => 'MCH-OTHER',
             'name' => 'Other Machine',
         ]);
-        $part = \App\Models\Part::factory()->forArea($area)->create([
+        $part = Part::factory()->forArea($area)->create([
             'code' => 'PRT100',
             'name' => 'Bearing',
         ]);
@@ -506,7 +719,7 @@ class MachineApiTest extends TestCase
             'area_id' => $area->id,
         ]);
         $machine = Machine::factory()->forArea($area)->create();
-        $position = \App\Models\Position::factory()->forArea($area)->create([
+        $position = Position::factory()->forArea($area)->create([
             'name' => 'Front Left',
         ]);
 
@@ -534,8 +747,8 @@ class MachineApiTest extends TestCase
             'area_id' => $area->id,
         ]);
         $machine = Machine::factory()->forArea($area)->create();
-        $position = \App\Models\Position::factory()->forArea($area)->create();
-        $part = \App\Models\Part::factory()->forArea($area)->create([
+        $position = Position::factory()->forArea($area)->create();
+        $part = Part::factory()->forArea($area)->create([
             'name' => 'Motor',
         ]);
 
@@ -567,6 +780,54 @@ class MachineApiTest extends TestCase
             ->assertJsonPath('data.0.text', 'Motor (SN-001)');
     }
 
+    public function test_authenticated_user_can_get_legacy_machine_detail_with_side_parts(): void
+    {
+        $area = Area::factory()->create();
+        $user = User::factory()->create([
+            'area_id' => $area->id,
+        ]);
+        $machine = Machine::factory()->forArea($area)->create([
+            'code' => 'MCH-DETAIL',
+            'name' => 'Machine Detail',
+        ]);
+        $frontPart = Part::factory()->forArea($area)->create([
+            'code' => 'PRT-FRONT',
+            'name' => 'Front Part',
+        ]);
+        $sidePart = Part::factory()->forArea($area)->create([
+            'code' => 'PRT-SIDE',
+            'name' => 'Side Part',
+        ]);
+
+        DB::table('machine_parts')->insert([
+            'machine_id' => $machine->id,
+            'part_id' => $frontPart->id,
+            'sort_order' => 1,
+            'pos_x' => '11',
+            'pos_y' => '22',
+        ]);
+        DB::table('machine_part_sides')->insert([
+            'machine_id' => $machine->id,
+            'part_id' => $sidePart->id,
+            'sort_order' => 1,
+            'pos_x' => '33',
+            'pos_y' => '44',
+        ]);
+
+        $token = auth('api')->login($user);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/machine/'.$machine->id.'/get-detail');
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.code', 'MCH-DETAIL')
+            ->assertJsonPath('data.parts.0.code', 'PRT-FRONT')
+            ->assertJsonPath('data.parts.0.x', '11')
+            ->assertJsonPath('data.parts_side.0.code', 'PRT-SIDE')
+            ->assertJsonPath('data.parts_side.0.x', '33');
+    }
+
     public function test_authenticated_user_can_get_legacy_machine_job_detail(): void
     {
         $area = Area::factory()->create();
@@ -579,12 +840,12 @@ class MachineApiTest extends TestCase
             'image' => 'images/machines/1/front.png',
             'image_side' => 'images/machines/1/side.png',
         ]);
-        $position = \App\Models\Position::factory()->forArea($area)->create();
-        $frontPart = \App\Models\Part::factory()->forArea($area)->create([
+        $position = Position::factory()->forArea($area)->create();
+        $frontPart = Part::factory()->forArea($area)->create([
             'code' => 'PRT-FR',
             'name' => 'Front Part',
         ]);
-        $sidePart = \App\Models\Part::factory()->forArea($area)->create([
+        $sidePart = Part::factory()->forArea($area)->create([
             'code' => 'PRT-SD',
             'name' => 'Side Part',
         ]);

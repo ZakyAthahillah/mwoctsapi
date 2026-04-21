@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Api;
 
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class UpdateMachineRequest extends BaseApiFormRequest
 {
@@ -58,6 +59,17 @@ class UpdateMachineRequest extends BaseApiFormRequest
             'description' => ['present', 'nullable', 'string'],
             'image' => ['present', 'nullable', 'string', 'max:255'],
             'image_side' => ['present', 'nullable', 'string', 'max:255'],
+            'parts' => ['nullable', 'array'],
+            'parts.id' => ['nullable', 'array'],
+            'parts.id.*' => ['integer', 'distinct', 'exists:parts,id'],
+            'parts.x' => ['nullable', 'array'],
+            'parts.x.*' => ['numeric'],
+            'parts.y' => ['nullable', 'array'],
+            'parts.y.*' => ['numeric'],
+            'parts.x_side' => ['nullable', 'array'],
+            'parts.x_side.*' => ['numeric'],
+            'parts.y_side' => ['nullable', 'array'],
+            'parts.y_side.*' => ['numeric'],
             'position_id' => ['sometimes', 'array'],
             'position_id.*' => [
                 'integer',
@@ -72,5 +84,30 @@ class UpdateMachineRequest extends BaseApiFormRequest
             ],
             'status' => ['required', 'integer', 'between:0,99'],
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator) {
+            if (! $this->has('parts.id')) {
+                return;
+            }
+
+            $partIds = $this->input('parts.id', []);
+            if (! is_array($partIds)) {
+                return;
+            }
+
+            foreach (['x', 'y', 'x_side', 'y_side'] as $coordinateKey) {
+                $coordinates = $this->input('parts.'.$coordinateKey, []);
+
+                if (is_array($coordinates) && count($coordinates) !== count($partIds)) {
+                    $validator->errors()->add(
+                        'parts.'.$coordinateKey,
+                        'The parts '.$coordinateKey.' field must contain the same number of items as parts id.'
+                    );
+                }
+            }
+        });
     }
 }

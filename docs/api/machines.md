@@ -62,7 +62,7 @@ Query parameters:
 
 ### GET `/api/machines/{id}/detail`
 
-Get a single machine detail with mapped front parts.
+Get a single machine detail with mapped front and side parts.
 
 ### GET `/api/machines/{id}/positions`
 
@@ -131,6 +131,31 @@ status=1
 
 Update a machine.
 
+This endpoint can also replace mapped EasyPIN part points for front and side machine images.
+
+Example JSON:
+
+```json
+{
+  "area_id": 1,
+  "code": "MCH001",
+  "name": "Mesin Potong Update",
+  "description": "Mesin update",
+  "image": "images/machines/10075/front.png",
+  "image_side": "images/machines/10075/side.png",
+  "status": 1,
+  "parts": {
+    "id": [1, 2],
+    "x": [12.4, 55.2],
+    "y": [22.1, 66.7],
+    "x_side": [10.4, 51.2],
+    "y_side": [20.1, 61.7]
+  }
+}
+```
+
+When `parts.id` is provided, existing records in `machine_parts` and `machine_part_sides` for the machine are replaced. The coordinate arrays must contain the same number of items as `parts.id`.
+
 ### DELETE `/api/machines/{id}`
 
 Delete a machine logically by changing `status` to `99`.
@@ -159,6 +184,7 @@ Toggle machine status between `99` and `1`.
 - Saat `image` atau `image_side` dikirim sebagai file upload pada endpoint create, file disimpan ke `public/images/machines/{id}`.
 - Nilai kolom `image` dan `image_side` akan disimpan sebagai path relatif, misalnya `images/machines/{id}/front.jpeg`.
 - Untuk menampilkan di web, gabungkan dengan base URL aplikasi, misalnya `{{ url($machine->image) }}` di Blade atau `window.location.origin + '/' + machine.image` di frontend.
+- `GET /api/machines/{id}/detail` includes `parts` for front image pins and `parts_side` for side image pins.
 - Machine responses include `area_name` when the related area exists.
 - Machine option endpoints follow the standardized API response format even for legacy-compatible routes.
 - Validation is required for create and update requests.

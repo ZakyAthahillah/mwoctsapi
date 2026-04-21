@@ -601,6 +601,8 @@ GET /api/machines/full-data-array-job?term=mesin
 Get machine detail with mapped parts
 GET /api/machines/{machine}/detail
 
+Returned detail includes front pins in data.parts and side pins in data.parts_side.
+
 Get machine positions
 GET /api/machines/{machine}/positions?term=front&selected=2
 
@@ -663,6 +665,25 @@ image=images/machines/10075/front.jpeg
 image_side=images/machines/10075/side.jpeg
 
 Update machine
+PUT /api/machines/{machine}
+{
+  "area_id": 1,
+  "code": "MCH001",
+  "name": "Mesin Potong Update",
+  "description": "Mesin update",
+  "image": "images/machines/10075/front.png",
+  "image_side": "images/machines/10075/side.png",
+  "status": 1,
+  "parts": {
+    "id": [1, 2],
+    "x": [12.4, 55.2],
+    "y": [22.1, 66.7],
+    "x_side": [10.4, 51.2],
+    "y_side": [20.1, 61.7]
+  }
+}
+
+Update machine without changing pins
 PUT /api/machines/{machine}
 {
   "area_id": 1,
