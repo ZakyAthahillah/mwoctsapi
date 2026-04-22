@@ -24,6 +24,7 @@ class MachineController extends Controller
 
             $machinesQuery = Machine::query()
                 ->with('area')
+                ->withCount(['parts', 'positions'])
                 ->where('status', '<>', 11)
                 ->when($user?->area_id !== null, fn ($query) => $query->where('area_id', $user->area_id), fn ($query) => $query->whereNull('area_id'))
                 ->when($search !== '', function ($query) use ($search) {
@@ -60,6 +61,7 @@ class MachineController extends Controller
 
             $machinesQuery = Machine::query()
                 ->with('area')
+                ->withCount(['parts', 'positions'])
                 ->whereIn('status', [1, 99])
                 ->when($user?->area_id !== null, fn ($query) => $query->where('area_id', $user->area_id), fn ($query) => $query->whereNull('area_id'))
                 ->when($search !== '', function ($query) use ($search) {
@@ -149,7 +151,7 @@ class MachineController extends Controller
                 return ApiResponseHelper::error('Resource not found', null, 404);
             }
 
-            $machine->load(['area', 'positions']);
+            $machine->load(['area', 'positions'])->loadCount(['parts', 'positions']);
 
             return ApiResponseHelper::success('Data retrieved successfully', MachineDataHelper::transform($machine));
         } catch (\Throwable $exception) {
@@ -417,7 +419,7 @@ class MachineController extends Controller
                 return ApiResponseHelper::error('Resource not found', null, 404);
             }
 
-            $machine->load(['area', 'positions']);
+            $machine->load(['area', 'positions'])->loadCount(['parts', 'positions']);
 
             $parts = DB::table('machine_parts as machinePart')
                 ->join('parts as part', 'part.id', '=', 'machinePart.part_id')

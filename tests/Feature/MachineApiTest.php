@@ -31,10 +31,27 @@ class MachineApiTest extends TestCase
         ]);
         $user = User::factory()->create(['area_id' => $area->id]);
         Machine::factory()->forArea($area)->count(10)->create(['status' => 1]);
-        Machine::factory()->forArea($area)->create([
+        $machineWithCounts = Machine::factory()->forArea($area)->create([
             'code' => 'MCH-AREA',
             'status' => 1,
         ]);
+        $partOne = Part::factory()->forArea($area)->create();
+        $partTwo = Part::factory()->forArea($area)->create();
+        $positionOne = Position::factory()->forArea($area)->create();
+        $positionTwo = Position::factory()->forArea($area)->create();
+        $machineWithCounts->parts()->create([
+            'part_id' => $partOne->id,
+            'sort_order' => 1,
+            'pos_x' => 10,
+            'pos_y' => 20,
+        ]);
+        $machineWithCounts->parts()->create([
+            'part_id' => $partTwo->id,
+            'sort_order' => 2,
+            'pos_x' => 30,
+            'pos_y' => 40,
+        ]);
+        $machineWithCounts->positions()->sync([$positionOne->id, $positionTwo->id]);
         Machine::factory()->forArea($area)->create([
             'code' => 'MCH-INACTIVE',
             'status' => 0,
@@ -57,6 +74,7 @@ class MachineApiTest extends TestCase
 
         $this->assertCount(10, $response->json('data'));
         $this->assertTrue(collect($response->json('data'))->contains(fn (array $item) => $item['code'] === 'MCH-AREA' && $item['area_name'] === 'Area Produksi'));
+        $this->assertTrue(collect($response->json('data'))->contains(fn (array $item) => $item['code'] === 'MCH-AREA' && $item['total_part'] === 2 && $item['total_position'] === 2));
         $this->assertTrue(collect($response->json('data'))->contains(fn (array $item) => $item['code'] === 'MCH-DELETED' && $item['status'] === 99));
         $this->assertFalse(collect($response->json('data'))->contains(fn (array $item) => $item['code'] === 'MCH-INACTIVE'));
     }
@@ -110,6 +128,13 @@ class MachineApiTest extends TestCase
         $positionTwo = Position::factory()->forArea($area)->create([
             'name' => 'Posisi B',
         ]);
+        $part = Part::factory()->forArea($area)->create();
+        $machine->parts()->create([
+            'part_id' => $part->id,
+            'sort_order' => 1,
+            'pos_x' => 12,
+            'pos_y' => 24,
+        ]);
         $machine->positions()->sync([$positionOne->id, $positionTwo->id]);
 
         $token = auth('api')->login($user);
@@ -121,6 +146,8 @@ class MachineApiTest extends TestCase
             ->assertJsonPath('success', true)
             ->assertJsonPath('data.code', 'MCH001')
             ->assertJsonPath('data.area_name', 'Area Utility')
+            ->assertJsonPath('data.total_part', 1)
+            ->assertJsonPath('data.total_position', 2)
             ->assertJsonPath('data.position_id.0', (string) $positionOne->id)
             ->assertJsonPath('data.position_id.1', (string) $positionTwo->id)
             ->assertJsonPath('data.position_name.0', 'Posisi A')

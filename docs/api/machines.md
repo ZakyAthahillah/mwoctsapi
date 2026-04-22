@@ -22,7 +22,7 @@ Machine API routes are defined in `routes/api.php`.
 
 ### GET `/api/machines`
 
-Get paginated machine data. This list only returns machines with status `1` and `99`.
+Get paginated machine data. This list only returns machines with status `1` and `99`. Each item includes `total_part` and `total_position`.
 
 Query parameters:
 
@@ -32,7 +32,7 @@ Query parameters:
 
 ### GET `/api/machine_active`
 
-Get paginated machine data where `status != 11`.
+Get paginated machine data where `status != 11`. Each item includes `total_part` and `total_position`.
 
 Query parameters:
 
@@ -48,6 +48,8 @@ The detail response includes assigned machine positions as parallel arrays:
 
 ```json
 {
+  "total_part": 2,
+  "total_position": 2,
   "position_id": ["1", "2"],
   "position_name": ["Posisi A", "Posisi B"]
 }
@@ -71,7 +73,7 @@ Query parameters:
 
 ### GET `/api/machines/{id}/detail`
 
-Get a single machine detail with mapped front and side parts. This response also includes `position_id` and `position_name` arrays.
+Get a single machine detail with mapped front and side parts. This response also includes `position_id`, `position_name`, `total_part`, and `total_position`.
 
 ### GET `/api/machines/{id}/positions`
 

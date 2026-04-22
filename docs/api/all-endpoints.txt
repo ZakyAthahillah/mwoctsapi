@@ -585,6 +585,7 @@ Machines Examples
 -----------------
 List machine_active
 GET /api/machine_active?per_page=10&search=mesin
+Returns total_part and total_position for each machine.
 
 Toggle machine status 99 <-> 1
 PUT /api/machine_setstatus/{machine}
@@ -592,6 +593,7 @@ PUT /api/machine_setstatus/{machine}
 List machines
 GET /api/machines?per_page=10&search=mesin
 Returns machines with status 1 and 99.
+Returns total_part and total_position for each machine.
 
 List machine options for legacy selector
 GET /api/machines/full-data-array?term=mesin
@@ -603,7 +605,7 @@ Get machine detail with mapped parts
 GET /api/machines/{machine}/detail
 
 Returned detail includes front pins in data.parts and side pins in data.parts_side.
-Returned detail also includes data.position_id and data.position_name arrays.
+Returned detail also includes data.position_id, data.position_name, data.total_part, and data.total_position.
 
 Get machine positions
 GET /api/machines/{machine}/positions?term=front&selected=2

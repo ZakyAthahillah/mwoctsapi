@@ -18,6 +18,8 @@ class MachineDataHelper
             'image' => $machine->image,
             'image_side' => $machine->image_side,
             'status' => (int) $machine->status,
+            'total_part' => (int) ($machine->parts_count ?? 0),
+            'total_position' => (int) ($machine->positions_count ?? 0),
             'created_at' => optional($machine->created_at)?->format('Y-m-d H:i:s'),
             'updated_at' => optional($machine->updated_at)?->format('Y-m-d H:i:s'),
         ];
