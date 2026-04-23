@@ -1,0 +1,859 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Part;
+use App\PartSerialNumber;
+use App\SerialNumber;
+use App\MachinePositionPart;
+use Illuminate\Http\Request;
+use Yajra\Datatables\Datatables;
+use Validator;
+use Illuminate\Support\Facades\Input;
+use App\Imports\PartImport;
+use App\Imports\PartOperationImport;
+use Maatwebsite\Excel\Facades\Excel;
+
+class PartController extends Controller
+{
+    private $controller = 'part';
+    private $description = '';
+    private $icon = 'fa fa-puzzle-piece';
+
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
+    
+    private function title()
+    {
+        return __('main.'.$this->controller);
+    }
+
+    private function arrNiceName()
+    {
+        return array(
+            'code' => 'Kode ' . __('main.'.$this->controller),
+            'name' => 'Nama ' . __('main.'.$this->controller)
+        );
+    }
+
+    public function index()
+    {
+        $userLoged = auth()->user();
+        if (!$userLoged->can($this->controller.'-index')){
+            return redirect()->route('dashboard.index')->with('error', __( 'main.401') );    
+        }
+
+        return view($this->controller.'.index')->with(array('controller' => $this->controller, 'title' => $this->title(), 'description' => $this->description, 'icon' => $this->icon));
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function create()
+    {
+        $userLoged = auth()->user();
+        if (!$userLoged->can($this->controller.'-create')){
+            return redirect()->route('dashboard.index')->with('error', __( 'main.401') );    
+        }
+
+        $utils['action'] = __('main.add_new');
+        
+        return view($this->controller.'.create', compact('utils'))->with(array('controller' => $this->controller, 'title' => $this->title(), 'description' => $this->description, 'icon' => $this->icon));
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function store(Request $request)
+    {
+        $userLoged = auth()->user();
+        if (!$userLoged->can($this->controller.'-create')){
+            return redirect()->route('dashboard.index')->with('error', __( 'main.401') );    
+        }
+
+        $arrValidates = [
+            'name'     => 'required|max:100',
+            //'code' => 'required|max:10|alpha_num|unique:areas,code',
+        ];
+        Validator::make($request->all(), $arrValidates, [], $this->arrNiceName())->validate();
+
+        // check code
+        $check = Part::where('area_id', $userLoged->area_id)->where('status', '<>', 99)->where('code', $request->code)->first();
+        if ($check){
+            return redirect()->route($this->controller.'.create')->with('error', 'Kode '. $request->code .' sudah digunakan' )->withInput();
+        }
+
+        $arrSaved = [
+            'area_id' => $userLoged->area_id,
+            'code'      => $request->get('code'),
+            'name'      => $request->get('name'),
+            'description'      => $request->get('description'),
+            'status'     => $request->get('status')
+        ];
+
+        $part = Part::create($arrSaved);
+
+        return redirect()->route($this->controller.'.edit', ['#tab_operation', 'part'=>$part->id])->with('status', __( 'main.data_has_been_added', ['page' => $part->name] ) . '. Silahkan isi data ' . __('main.operation') );
+    }
+
+    public function import()
+    {
+        $userLoged = auth()->user();
+        if (!$userLoged->can($this->controller.'-create')){
+            return redirect()->route('dashboard.index')->with('error', __( 'main.401') );    
+        }
+
+        $utils['action'] = __('main.import');
+        return view($this->controller.'.import', compact('utils'))->with(array('controller' => $this->controller, 'title' => $this->title(), 'description' => $this->description, 'icon' => $this->icon));
+    }
+
+    public function storeImport(Request $request)
+    {
+        $userLoged = auth()->user();
+        if (!$userLoged->can($this->controller.'-create')){
+            return redirect()->route('dashboard.index')->with('error', __( 'main.401') );    
+        }
+
+        $validator = Validator::make(
+            [
+                'file'      => $request->file,
+                'extension' => strtolower($request->file->getClientOriginalExtension()),
+            ],
+            [
+                'file'          => 'required',
+                'extension'      => 'required|in:xlsx,xls',
+            ]
+
+        );
+
+        $totalRows = 0;
+        $errors = [];
+        $file = $request->file;
+        if($file){
+            $uploadedFileMimeType = $file->getMimeType();
+
+            $mimes = array('application/excel','application/vnd.ms-excel','application/vnd.msexcel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            
+            //if(in_array($_FILES['file']['type'], $mimes)){
+                $file = $request->file('file'); //GET FILE
+                $rows = Excel::toCollection(new PartImport, $file); //IMPORT FILE 
+                unset($rows[0][0]);
+                
+                if (count($rows[0])){
+                    $dataSaving = [];
+                    foreach ($rows[0] as $k => $v){
+                        if (!empty($v)){
+                            $code = $v[0];
+                            $checkCode = Part::where('status','<>',99)->where('area_id', $userLoged->area_id)->where('code', $code)->first();
+                            if ($checkCode){
+                                $errors[] = $code;
+                            } else {
+                                $totalRows++;
+                                $dataSaving[] = array(
+                                    'code' => $v[0],
+                                    'name' => $v[1],
+                                    'description' => isset($v[2]) ? $v[2] : null,
+                                    'status' => 1,
+                                    'area_id' => $userLoged->area_id
+                                );  
+                            }
+                        }
+                    }    
+                    Part::insert($dataSaving);
+                }
+                
+            //} else{
+            //    return redirect()->route($this->controller.'.import')->with('error', 'Anda diharuskan memilih file excel' );
+            //}
+        }
+
+        $msg = $totalRows . ' data telah berhasil diimport. ';
+        if (count($errors)){
+            $msg .= 'Tapi terdapat kesalahan: ';
+            $msg .= '<ul>';
+            foreach ($errors as $errNumber){
+                $msg .= '<li>'.$errNumber.' sudah tersedia</li>';
+            }
+            $msg .= '</ul>';
+        }
+
+        return redirect()->route($this->controller.'.index')->with('status',  $msg);
+    }
+
+    /**
+     * Display the specified resource.
+     *
+     * @param  \App\Part  $part
+     * @return \Illuminate\Http\Response
+     */
+    public function show(Part $part)
+    {
+        //
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     *
+     * @param  \App\Part  $part
+     * @return \Illuminate\Http\Response
+     */
+    public function edit(Part $part)
+    {
+        $userLoged = auth()->user();
+        if (!$userLoged->can($this->controller.'-update')){
+            return redirect()->route('dashboard.index')->with('error', __( 'main.401') );    
+        }
+
+        if ($part->area_id <> $userLoged->area_id){
+            return redirect()->route('dashboard.index')->with('error', __( 'main.401') );           
+        }
+
+        if ($part->status === 99){
+            return redirect()->route('dashboard.index')->with('error', __( 'main.401') );           
+        }
+
+        $utils['action'] = __('main.edit');
+
+        return view($this->controller.'.edit', compact('part', 'utils'))->with(array('controller' => $this->controller, 'title' => $this->title(), 'description' => $this->description, 'icon' => $this->icon));
+    }
+
+    /**
+     * Update the specified resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Part  $part
+     * @return \Illuminate\Http\Response
+     */
+    public function update(Request $request, Part $part)
+    {
+        $userLoged = auth()->user();
+        if (!$userLoged->can($this->controller.'-update')){
+            return redirect()->route('dashboard.index')->with('error', __( 'main.401') );    
+        }
+
+        if ($part->area_id <> $userLoged->area_id){
+            return redirect()->route('dashboard.index')->with('error', __( 'main.401') );           
+        }
+
+        if ($part->status === 99){
+            return redirect()->route('dashboard.index')->with('error', __( 'main.401') );           
+        }
+
+        if ($request->action == 'data'){
+            $this->updateData($userLoged, $request, $part);
+            $pageName = ' / Informasi';
+        } elseif ($request->action == 'operation') {
+            $this->updateOperation($userLoged, $request, $part);
+            $pageName = __('main.operation');
+        } elseif ($request->action == 'reason') {
+            $this->updateReason($userLoged, $request, $part);
+            $pageName = __('main.reason');
+        }
+
+        return redirect()->route($this->controller.'.edit', ['#tab_'.$request->action, 'part'=>$part->id])->with('status', __( 'main.data_has_been_updated', ['page' => $pageName] ) );
+    }
+
+    private function updateData($userLoged, $request, $part)
+    {
+        $arrValidates = [
+            'name'     => 'required|max:100'
+        ];
+        Validator::make($request->all(), $arrValidates, [], $this->arrNiceName())->validate();
+
+        // check code
+        $check = Part::where('area_id', $userLoged->area_id)->where('status', '<>', 99)->where('code', $request->code)->where('id', '<>', $part->id)->first();
+        if ($check){
+            return redirect()->route($this->controller.'.update', $part->id)->with('error', 'Kode ' . $request->code .' sudah digunakan' )->withInput();
+        }
+
+        $arrSaved = [
+            'code'      => $request->get('code'),
+            'name'      => $request->get('name'),
+            'description'      => $request->get('description'),
+            'status'     => $request->get('status')
+        ];
+
+        $part->update($arrSaved);
+    }
+
+    private function updateOperation($userLoged, $request, $part)
+    {
+        $part->operations()->sync($request->get('operation'));
+    }
+
+    private function updateReason($userLoged, $request, $part)
+    {
+        $part->reasons()->sync($request->get('reason'));
+    }
+
+    
+
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  \App\Part  $part
+     * @return \Illuminate\Http\Response
+     */
+    public function destroy(Part $part)
+    {
+        $userLoged = auth()->user();
+        if (!$userLoged->can($this->controller.'-delete')){
+            return redirect()->route('dashboard.index')->with('error', __( 'main.401') );    
+        }
+
+        if ($part->area_id <> $userLoged->area_id){
+            return redirect()->route('dashboard.index')->with('error', __( 'main.401') );           
+        }
+
+        if ($part->status === 99){
+            return redirect()->route('dashboard.index')->with('error', __( 'main.401') );           
+        }
+
+        $part->status = 99;
+        $part->save();
+
+        return redirect()->route($this->controller.'.index')->with('status', __( 'main.data_has_been_deleted', ['page' => $part->name] ) );
+    }
+
+    public function getData(Request $request)
+    {
+        $userLoged = auth()->user();
+        if (!$userLoged->can($this->controller.'-index')){
+            return redirect()->route('dashboard.index')->with('error', __( 'main.401') );    
+        }
+        
+        $arrColumns = [1=>'id', 2=>'code', 2=>'name', 3=>'status'];
+
+        $draw = $request->get('draw');
+        $start = $request->get('start');
+        $length = $request->get('length');
+        $orderBy = $request->get('order')[0]['column'];
+        $orderAD = $request->get('order')[0]['dir'];
+        $q = $request->get('search')['value'];
+
+        $rows = Part::select([
+            'id',
+            'code',
+            'name',
+            'description',
+            'status'
+        ])->where('status', '<>', 99)->where('area_id', $userLoged->area_id);
+
+        if ($q !== null){
+            $rows->where(function($query) use ($q){
+                 $query->where('code', 'LIKE', '%'.$q.'%');
+                 $query->orWhere('name', 'LIKE', '%'.$q.'%');
+                 $query->orWhere('description', 'LIKE', '%'.$q.'%');
+            });
+        }
+
+        $totalRows = $rows->get()->count();
+        $rows = $rows->offset($start)->take($length)
+            ->orderBy($arrColumns[$orderBy],$orderAD)
+            ->get();
+
+        return Datatables::of($rows)
+            ->addIndexColumn()
+            ->skipPaging()
+            ->with([
+                'recordsTotal' => $totalRows,
+                'recordsFiltered' => $totalRows,
+            ])
+            ->addColumn('total_operation', function ($row) {
+                return $row->operations->count();
+            })
+            ->addColumn('total_reason', function ($row) {
+                return $row->reasons->count();
+            })
+            ->addColumn('total_sn', function ($row) {
+                return $row->serialNumbers->count();
+            })
+            ->addColumn('statusText', function ($row) {
+                return arrStatusActive()[$row->status];
+            })
+            ->addColumn('statusClass', function ($row) {
+                return arrStatusActiveClass()[$row->status];
+            })
+            ->addColumn('viewUrl', function ($row) {
+                return route($this->controller.'.show', $row->id);
+            })
+            ->addColumn('canCreate', function ($row) {
+                return auth()->user()->can($this->controller.'-create');
+            })
+            ->addColumn('importUrl', function ($row) {
+                return route($this->controller.'.import-operation', $row->id);
+            })
+            ->addColumn('canEdit', function ($row) {
+                return auth()->user()->can($this->controller.'-update');
+            })
+            ->addColumn('editUrl', function ($row) {
+                return route($this->controller.'.edit', $row->id);
+            })
+            ->addColumn('canDelete', function ($row) {
+                return auth()->user()->can($this->controller.'-delete');
+            })
+            ->addColumn('deleteUrl', function ($row) {
+                return route($this->controller.'.destroy', $row->id);
+            })
+            ->addColumn('snUrl', function ($row) {
+                return route($this->controller.'.sn', $row->id);
+            })
+            ->make();
+    }
+
+    public function getDataArray(Request $request)
+    {
+        $rows = Part::getDataArray(auth()->user()->area_id, false, $request->term);
+
+        $arr = array();
+        if (count($rows)) {
+            foreach ($rows as $k => $v) {
+                $arr[] = ['id' => $k, 'text' => $v ];
+            }
+        }
+        return response()->json($arr);
+    }
+
+    public function getFullDataArray(Request $request)
+    {
+        $rows = Part::getFullDataArray(auth()->user()->area_id, false, $request->term);
+
+        $arr = array();
+        if (count($rows)) {
+            foreach ($rows as $k => $v) {
+                $arr[] = ['id' => $k, 'text' => $v['title'], 'code' => $v['code'], 'name' => $v['name'], 'description' => $v['description'] ];
+            }
+        }
+        return response()->json($arr);
+    }
+
+    public function getDetail($part_id)
+    {
+        $row = Part::select('id', 'name', 'code')->where('status','<>', 99)->whereId($part_id)->firstOrFail();
+
+        $row->text = $row->code . ' : ' . $row->name;
+        return response()->json($row);
+    }
+
+    public function getOperation(Request $request, Part $part)
+    {
+        $userLoged = auth()->user();
+        if ($part->area_id <> $userLoged->area_id){
+            return redirect()->route('dashboard.index')->with('error', __( 'main.401') );           
+        }
+        
+        if ($part->status === 99){
+            return redirect()->route('dashboard.index')->with('error', __( 'main.401') );           
+        }
+
+        $operations = $part->operations();
+
+        if (!empty($request->term)){
+            $operations->where(function($query) use ($request){
+                 $query->where('code', 'LIKE', '%'.$request->term.'%');
+                 $query->orWhere('name', 'LIKE', '%'.$request->term.'%');
+            });
+        }
+
+        $operations = $operations->get();
+
+        $arr = array();
+        if (count($operations)) {
+            foreach ($operations as $k => $operation) {
+                $arr[] = [
+                    'id' => $operation->id, 
+                    'text' => $operation->code .': '.$operation->name,   
+                    //'division_id' => $operation->division_id, 
+                    //'division_name' => $operation->division->name 
+                ];
+            }
+        }
+        return response()->json($arr);
+    }
+    
+    public function importOperation(Part $part)
+    {
+        $userLoged = auth()->user();
+        if (!$userLoged->can($this->controller.'-create')){
+            return redirect()->route('dashboard.index')->with('error', __( 'main.401') );    
+        }
+
+        if ($part->area_id <> $userLoged->area_id){
+            return redirect()->route('dashboard.index')->with('error', __( 'main.401') );           
+        }
+
+        if ($part->status === 99){
+            return redirect()->route('dashboard.index')->with('error', __( 'main.401') );           
+        }
+
+        $utils['action'] = __('main.import') . ' ' . __('main.operation');
+
+        return view($this->controller.'.import-operation', compact('part', 'utils'))->with(array('controller' => $this->controller, 'title' => $this->title(), 'description' => $this->description, 'icon' => $this->icon));
+    }
+
+    public function storeImportOperation(Request $request, Part $part)
+    {
+        $userLoged = auth()->user();
+        if (!$userLoged->can($this->controller.'-update')){
+            return redirect()->route('dashboard.index')->with('error', __( 'main.401') );    
+        }
+
+        if ($part->area_id <> $userLoged->area_id){
+            return redirect()->route('dashboard.index')->with('error', __( 'main.401') );           
+        }
+
+        if ($part->status === 99){
+            return redirect()->route('dashboard.index')->with('error', __( 'main.401') );           
+        }
+
+        $validator = Validator::make(
+            [
+                'file'      => $request->file,
+                'extension' => strtolower($request->file->getClientOriginalExtension()),
+            ],
+            [
+                'file'          => 'required',
+                'extension'      => 'required|in:xlsx,xls',
+            ]
+
+        );
+
+        $totalRows = 0;
+        $errors = [];
+        $file = $request->file;
+        if($file){
+            $uploadedFileMimeType = $file->getMimeType();
+
+            $mimes = array('application/excel','application/vnd.ms-excel','application/vnd.msexcel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            
+            //if(in_array($_FILES['file']['type'], $mimes)){
+                $file = $request->file('file'); //GET FILE
+                $rows = Excel::toCollection(new PartOperationImport, $file); //IMPORT FILE 
+                unset($rows[0][0]);
+                
+                if (count($rows[0])){
+                    $dataSaving = [];
+                    foreach ($rows[0] as $k => $v){
+                        if (!empty($v)){
+                            $code = $v[0];
+                            $operation = \App\Operation::where('status','<>',99)->where('area_id', $userLoged->area_id)->where('code', $code)->first();
+                            if (!$operation){
+                                $errors[] = $code;
+                            } else {
+                                $totalRows++;
+                                $dataSaving[] = $operation->id;
+                            }
+                        }
+                    }    
+                    
+                    $part->operations()->sync($dataSaving);
+                }
+                
+            //} else{
+            //    return redirect()->route($this->controller.'.import')->with('error', 'Anda diharuskan memilih file excel' );
+            //}
+        }
+
+        $msg = $totalRows . ' data telah berhasil diimport. ';
+        if (count($errors)){
+            $msg .= 'Tapi terdapat kesalahan: ';
+            $msg .= '<ul>';
+            foreach ($errors as $errNumber){
+                $msg .= '<li>'.$errNumber.' sudah tersedia</li>';
+            }
+            $msg .= '</ul>';
+        }
+
+        return redirect()->route($this->controller.'.index')->with('status',  $msg);
+
+    }
+
+    public function serialNumber(Part $part)
+    {
+        $userLoged = auth()->user();
+        if (!$userLoged->can($this->controller.'-update')){
+            return redirect()->route('dashboard.index')->with('error', __( 'main.401') );    
+        }
+
+        if ($part->area_id <> $userLoged->area_id){
+            return redirect()->route('dashboard.index')->with('error', __( 'main.401') );           
+        }
+
+        if ($part->status === 99){
+            return redirect()->route('dashboard.index')->with('error', __( 'main.401') );           
+        }
+
+        $utils['action'] = __('main.serialNumber') . ' ' . $part->name;
+        //$utils['serialNumbers'] = $part->serialNumbers()->where('status', 1)->get();
+
+        return view($this->controller.'.serialNumber', compact('part', 'utils'))->with(array('controller' => $this->controller, 'title' => $this->title(), 'description' => $this->description, 'icon' => $this->icon));
+    }
+
+    public function storeSn(Request $request)
+    {
+        $userLoged = auth()->user();
+        if (!$userLoged->can($this->controller.'-create')){
+            return redirect()->route('dashboard.index')->with('error', __( 'main.401') );    
+        }
+
+        $part = Part::whereId($request->part_id)->firstOrFail();
+
+        if ($part->area_id <> $userLoged->area_id){
+            return redirect()->route('dashboard.index')->with('error', __( 'main.401') );           
+        }
+
+        if ($part->status === 99){
+            return redirect()->route('dashboard.index')->with('error', __( 'main.401') );           
+        }
+
+        if (empty($request->serial_number)){
+            return redirect()->route($this->controller.'.sn', $part->id)->with('error', 'Silahkan isi Serial Number' );           
+        }
+
+        $check = PartSerialNumber::where('area_id', $userLoged->area_id)
+            ->where('part_id', $part->id)
+            ->where('status', 1)
+            ->where('serial_number', $request->serial_number)
+            ->first();
+
+        if ($check){
+            return redirect()->route($this->controller.'.sn', $part->id)->with('error', 'Serial Number ' . $request->serial_number . ' sudah tersedia di database' );           
+        }
+
+        $sn = PartSerialNumber::create([
+            'area_id'   => $userLoged->area_id,
+            'part_id'   => $part->id,
+            'serial_number'   => $request->serial_number
+        ]);
+
+        return redirect()->route($this->controller.'.sn', $part->id)->with('status', __( 'main.data_has_been_added', ['page' => $sn->serial_number] ) );
+    }
+
+    public function updateSn(Request $request, $sn)
+    {
+        $userLoged = auth()->user();
+        if (!$userLoged->can($this->controller.'-create')){
+            return redirect()->route('dashboard.index')->with('error', __( 'main.401') );    
+        }
+
+        $sn = PartSerialNumber::where('area_id', $userLoged->area_id)
+            ->where('status', 1)
+            ->where('id', $sn)
+            ->firstOrFail();
+
+        if (empty($request->serial_number)){
+            return redirect()->route($this->controller.'.sn', $sn->part_id)->with('error', 'Silahkan isi Serial Number' );           
+        }
+
+        $check = PartSerialNumber::where('area_id', $userLoged->area_id)
+            ->where('status', 1)
+            ->where('serial_number', $request->serial_number)
+            ->where('id', '<>', $sn->id)
+            ->first();
+
+        if ($check){
+            return redirect()->route($this->controller.'.sn', $sn->part_id)->with('error', 'Serial Number ' . $request->serial_number . ' sudah tersedia di database' );           
+        }
+
+        $sn->serial_number = $request->serial_number;
+        $sn->save();
+
+        return redirect()->route($this->controller.'.sn', $sn->part_id)->with('status', __( 'main.data_has_been_updated', ['page' => $sn->serial_number] ) );
+    }
+
+    public function updateSerialNumber(Request $request, Part $part)
+    {
+        $userLoged = auth()->user();
+        if (!$userLoged->can($this->controller.'-update')){
+            return redirect()->route('dashboard.index')->with('error', __( 'main.401') );    
+        }
+
+        if ($part->area_id <> $userLoged->area_id){
+            return redirect()->route('dashboard.index')->with('error', __( 'main.401') );           
+        }
+
+        if ($part->status === 99){
+            return redirect()->route('dashboard.index')->with('error', __( 'main.401') );           
+        }
+
+        $olds = $part->serialNumbers()->pluck('id')->toArray();
+        $serialNumbers = $request->sn;
+        $ids = [];
+        if (count($serialNumbers)){
+            foreach ($serialNumbers as $id => $serialNumber){
+                $sn = PartSerialNumber::updateOrCreate([
+                    'area_id'   => $part->area_id,
+                    'part_id'   => $part->id,
+                    'id'   => $id,
+                ],[
+                    'serial_number'   => $serialNumber
+                ]);
+
+                $ids[] = $sn->id;
+            }
+        }
+
+        $diff = array_diff($olds, $ids);
+        if (count($diff)){
+            foreach ($diff as $v){
+                PartSerialNumber::whereId($v)->update([
+                    'status' => 99
+                ]);
+            }
+        }
+
+        return redirect()->route($this->controller.'.sn', $part->id)->with('status', __( 'main.data_has_been_updated', ['page' => __('main.serialNumber')] ) );
+    }
+
+    public function getDataSn(Request $request)
+    {
+        $userLoged = auth()->user();
+        if (!$userLoged->can($this->controller.'-index')){
+            return redirect()->route('dashboard.index')->with('error', __( 'main.401') );    
+        }
+
+        $where = [];
+        $where[] = ['status', '<>', 99];
+        $where[] = ['part_id', $request->part_id];
+
+        $rows = PartSerialNumber::select([
+            'id',
+            'serial_number'
+        ])->where($where);
+
+        return Datatables::of($rows)
+            ->addIndexColumn()
+            ->addColumn('canEdit', function ($row) {
+                return auth()->user()->can($this->controller.'-update');
+            })
+            ->addColumn('editUrl', function ($row) {
+                return route($this->controller.'.updateSn', $row->id);
+            })
+            ->addColumn('canDelete', function ($row) {
+                return auth()->user()->can($this->controller.'-delete');
+            })
+            ->addColumn('deleteUrl', function ($row) {
+                return route($this->controller.'.destroy', $row->id);
+            })
+            ->make(true);
+    }
+
+    public function getSnDetail(PartSerialNumber $sn)
+    {
+        $userLoged = auth()->user();
+        if ($sn->area_id != $userLoged->area_id){
+            return false;
+        }
+
+        $sn->text = $sn->serial_number;
+        return response()->json($sn);
+    }
+
+
+    public function getSerialNumber(Request $request)
+    {
+        $action = $request->action;
+        $userLoged = auth()->user();
+        $sns = PartSerialNumber::select('id', 'serial_number')
+            ->where('area_id', $userLoged->area_id)
+            ->where('part_id', $request->part_id)
+            ->where('status', 1);
+
+        if ($action != 'mtbf'){
+            $sns->whereNotIn('id', function($query) use($userLoged, $request) {
+                $query->select('part_serial_number_id')
+                    ->from(with(new SerialNumber)->getTable())
+                    ->where('area_id', $userLoged->area_id)
+                    ->where('part_id', $request->part_id);
+            });
+        }   
+
+        if ($action == 'edit'){
+            //$part_serial_number_id = $request->part_serial_number_id;
+            $sns->orWhere('id', $request->part_serial_number_id);
+        }
+
+        $q = $request->q;
+        if (!empty($q)){
+            $sns->where('serial_number', 'LIKE', '%'.$q.'%');     
+        }
+
+        $sns = $sns->get();
+
+        $arr = array();
+        if (count($sns)) {
+            foreach ($sns as $sn) {
+                $arr[] = ['id' => $sn->id, 'text' => $sn->serial_number ];
+            }
+        }
+        return response()->json($arr);
+    }
+
+    public function getSerialNumberMachine(Request $request)
+    {
+        $userLoged = auth()->user();
+        $sns = SerialNumber::select([
+                'part_serial_numbers.id', 
+                'part_serial_numbers.serial_number'
+            ])
+            ->leftJoin('part_serial_numbers', 'part_serial_numbers.id', '=', 'serial_numbers.part_serial_number_id')
+            ->where('serial_numbers.area_id', $userLoged->area_id)
+            ->where('serial_numbers.machine_id', $request->machine_id)
+            ->where('serial_numbers.position_id', $request->position_id)
+            ->where('serial_numbers.part_id', $request->part_id)
+            ->first();
+
+        return response()->json([
+            'status' => $sns ? true : false,
+            'data' => $sns
+        ]);
+    }
+
+    public function snGetDataArray(Request $request)
+    {
+        $rows = PartSerialNumber::where('area_id', auth()->user()->area_id)
+            ->where('status', 1)
+            ->get();
+
+        $arr = array();
+        if (count($rows)) {
+            foreach ($rows as $k => $v) {
+                $arr[] = ['id' => $v->id, 'text' => $v->serial_number ];
+            }
+        }
+        return response()->json($arr);
+    }
+
+
+}
+
+
+/* Part */
+    Route::post('serial_number/get-data-array', 'PartController@snGetDataArray')->name('part.snGetDataArray');
+    Route::put('part/{sn}/update-sn', 'PartController@updateSn')->name('part.updateSn');
+    Route::post('part/store-sn', 'PartController@storeSn')->name('part.storeSn');
+    Route::post('part/get-sn', 'PartController@getDataSn')->name('part.getSn');
+    Route::get('part/{sn}/get-sn-detail', 'PartController@getSnDetail')->name('part.getSnDetail');
+    Route::post('part/get-serial-number-machine', 'PartController@getSerialNumberMachine')->name('part.getSerialNumberMachine');
+    Route::post('part/get-serial-number', 'PartController@getSerialNumber')->name('part.getSerialNumber');
+    Route::put('part/{part}/serial-number', 'PartController@updateSerialNumber')->name('part.updateSerialNumber');
+    Route::get('part/{part}/serial-number', 'PartController@serialNumber')->name('part.sn');
+    Route::post('part/get-data', 'PartController@getData')->name('part.getData');
+    Route::post('part/get-data-array', 'PartController@getDataArray')->name('part.getDataArray');
+    Route::post('part/get-full-data-array', 'PartController@getFullDataArray')->name('part.getFullDataArray');
+    Route::get('part/{part}/detail', 'PartController@getDetail')->name('part.detail');
+    Route::post('part/{part}/get-operation', 'PartController@getOperation')->name('part.getOperation');
+    Route::get('part/import', 'PartController@import')->name('part.import');
+    Route::post('part/import', 'PartController@storeImport')->name('part.import');
+    Route::get('part/import-operation', 'PartController@importOperationAll')->name('part.import-operation-all');
+    Route::post('part/import-operation', 'PartController@importOperationAll')->name('part.import-operation-all');
+    Route::get('part/{part}/import', 'PartController@importOperation')->name('part.import-operation');
+    Route::post('part/{part}/import', 'PartController@storeImportOperation')->name('part.import-operation');
+    Route::resource('part', 'PartController');

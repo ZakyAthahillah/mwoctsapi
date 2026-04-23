@@ -210,6 +210,7 @@ class ReportingReportApiTest extends TestCase
             'reason_id' => $fixtures['reason']->id,
             'informant_id' => $fixtures['informant']->id,
             'reporting_number' => 'RPT-001',
+            'sort_order' => 1,
             'reporting_date' => '2026-04-10 08:00:00',
             'reporting_notes' => 'Initial report',
             'processing_date_start' => '2026-04-10 08:15:00',
