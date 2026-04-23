@@ -18,7 +18,18 @@ class OperationApiTest extends TestCase
     {
         $area = Area::factory()->create();
         $user = User::factory()->create(['area_id' => $area->id]);
-        Operation::factory()->forArea($area)->count(12)->create();
+        Operation::factory()->forArea($area)->count(11)->create();
+        $division = Division::factory()->forArea($area)->create([
+            'name' => 'Mechanical',
+        ]);
+        $part = Part::factory()->forArea($area)->create([
+            'name' => 'HC Blower',
+        ]);
+        $operationWithRelations = Operation::factory()->forArea($area)->create([
+            'code' => 'OPR-REL',
+        ]);
+        $operationWithRelations->divisions()->sync([$division->id]);
+        $operationWithRelations->parts()->sync([$part->id]);
         Operation::factory()->forArea($area)->deletedStatus()->create();
 
         $token = auth('api')->login($user);
@@ -34,13 +45,22 @@ class OperationApiTest extends TestCase
             ->assertJsonPath('meta.total', 12);
 
         $this->assertCount(10, $response->json('data'));
+        $this->assertTrue(collect($response->json('data'))->contains(fn (array $item) => $item['code'] === 'OPR-REL'
+            && $item['division_id'] === [(string) $division->id]
+            && $item['division_name'] === ['Mechanical']
+            && $item['part_id'] === [(string) $part->id]
+            && $item['part_name'] === ['HC Blower']));
     }
 
     public function test_authenticated_user_can_list_operation_active_with_status_not_equal_eleven(): void
     {
         $area = Area::factory()->create();
         $user = User::factory()->create(['area_id' => $area->id]);
-        Operation::factory()->forArea($area)->create(['code' => 'OPR001', 'status' => 1]);
+        $division = Division::factory()->forArea($area)->create();
+        $part = Part::factory()->forArea($area)->create();
+        $operation = Operation::factory()->forArea($area)->create(['code' => 'OPR001', 'status' => 1]);
+        $operation->divisions()->sync([$division->id]);
+        $operation->parts()->sync([$part->id]);
         Operation::factory()->forArea($area)->create(['code' => 'OPR002', 'status' => 0]);
         Operation::factory()->forArea($area)->create(['code' => 'OPR011', 'status' => 11]);
 
@@ -51,6 +71,10 @@ class OperationApiTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('meta.total', 2);
+
+        $this->assertTrue(collect($response->json('data'))->contains(fn (array $item) => $item['code'] === 'OPR001'
+            && $item['division_id'] === [(string) $division->id]
+            && $item['part_id'] === [(string) $part->id]));
     }
 
     public function test_authenticated_user_can_filter_operations_by_area(): void

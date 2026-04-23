@@ -22,7 +22,7 @@ class OperationController extends Controller
             $search = trim((string) $request->query('search', ''));
 
             $operationsQuery = Operation::query()
-                ->with('area')
+                ->with(['area', 'divisions', 'parts'])
                 ->where('status', '<>', 11)
                 ->when($user?->area_id !== null, fn ($query) => $query->where('area_id', $user->area_id), fn ($query) => $query->whereNull('area_id'))
                 ->when($search !== '', function ($query) use ($search) {
@@ -57,7 +57,7 @@ class OperationController extends Controller
             $search = trim((string) $request->query('search', ''));
 
             $operationsQuery = Operation::query()
-                ->with('area')
+                ->with(['area', 'divisions', 'parts'])
                 ->where('status', '<>', 99)
                 ->when($user?->area_id !== null, fn ($query) => $query->where('area_id', $user->area_id), fn ($query) => $query->whereNull('area_id'))
                 ->when($search !== '', function ($query) use ($search) {

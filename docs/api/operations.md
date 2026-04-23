@@ -23,6 +23,7 @@ Operation API routes are defined in `routes/api.php`.
 ### GET `/api/operations`
 
 Get paginated operation data.
+Each item also includes `division_id`, `division_name`, `part_id`, and `part_name` arrays when relations exist.
 
 Query parameters:
 
@@ -33,6 +34,7 @@ Query parameters:
 ### GET `/api/operation_active`
 
 Get paginated operation data where `status != 11`.
+Each item also includes `division_id`, `division_name`, `part_id`, and `part_name` arrays when relations exist.
 
 Query parameters:
 
