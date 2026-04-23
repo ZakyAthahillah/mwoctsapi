@@ -10,11 +10,28 @@ POST   /api/login
 POST   /api/refresh
 POST   /api/logout
 GET    /api/me
+GET    /api/profile
+POST   /api/profile
 GET    /api/dashboard
 
 Downtimes
 ---------
 GET    /api/downtimes
+
+Reportings
+----------
+GET    /api/reportings
+POST   /api/reportings
+GET    /api/reportings/{reporting}
+PUT    /api/reportings/{reporting}
+DELETE /api/reportings/{reporting}
+GET    /api/reportings/types
+GET    /api/reportings/time
+
+Reporting Reports
+-----------------
+GET    /api/reporting-reports
+GET    /api/reporting-reports/statuses
 
 Jobs
 ----
@@ -42,6 +59,15 @@ GET    /api/fbdts/check
 GET    /api/fbdts/{year}
 POST   /api/fbdts
 PUT    /api/fbdts/{year}
+
+Targets
+-------
+GET    /api/targets
+GET    /api/targets/check
+GET    /api/targets/{part}/{year}
+POST   /api/targets
+PUT    /api/targets/{part}/{year}
+DELETE /api/targets/{part}/{year}
 
 Areas
 -----
@@ -180,6 +206,16 @@ GET    /api/technicians/{technician}
 PUT    /api/technicians/{technician}
 DELETE /api/technicians/{technician}
 
+Roles
+-----
+GET    /api/roles
+POST   /api/roles
+GET    /api/roles/{role}
+PUT    /api/roles/{role}
+DELETE /api/roles/{role}
+GET    /api/roles/{role}/permissions
+PUT    /api/roles/{role}/permissions
+
 Permissions
 -----------
 GET    /api/permissions
@@ -190,6 +226,7 @@ DELETE /api/permissions/{permission}
 
 Users
 -----
+GET    /api/users
 PUT    /api/user_setstatus/{user}
 PUT    /api/users/{user}
 DELETE /api/users/{user}
@@ -204,12 +241,17 @@ Access Notes
 - Require JWT token:
   POST /api/logout
   GET /api/me
+  GET /api/profile
+  POST /api/profile
   GET /api/dashboard
   All downtime endpoints
+  All reporting endpoints
+  All reporting report endpoints
   All job endpoints
   All MTBF endpoints
   All MTTR endpoints
   All FBDT endpoints
+  All target endpoints
   All area endpoints
   All division endpoints
   All group endpoints
@@ -224,19 +266,25 @@ Access Notes
   All technician endpoints
 
 - Require JWT token and admin middleware:
+  All role endpoints
   All permission endpoints
+  GET /api/users
   PUT /api/users/{user}
   DELETE /api/users/{user}
 
 Documentation Files
 -------------------
 - docs/api/auth-user-management.md
+- docs/api/profile.md
 - docs/api/dashboard.md
 - docs/api/downtimes.md
+- docs/api/reportings.md
+- docs/api/reporting-reports.md
 - docs/api/jobs.md
 - docs/api/mtbf.md
 - docs/api/mttr.md
 - docs/api/fbdts.md
+- docs/api/targets.md
 - docs/api/areas.md
 - docs/api/divisions.md
 - docs/api/groups.md
@@ -249,6 +297,7 @@ Documentation Files
 - docs/api/serial-numbers.md
 - docs/api/shifts.md
 - docs/api/technicians.md
+- docs/api/roles.md
 - docs/api/permissions.md
 
 Positions Examples
@@ -314,6 +363,20 @@ POST /api/login
 
 Get authenticated user profile
 GET /api/me
+
+Get full authenticated profile
+GET /api/profile
+
+Update authenticated profile
+POST /api/profile
+{
+  "name": "Updated User",
+  "email": "updated@example.com",
+  "username": "updateduser",
+  "image": "images/users/1/profile.png",
+  "password": "newpassword",
+  "password_confirmation": "newpassword"
+}
 
 Get dashboard summary
 GET /api/dashboard
@@ -391,6 +454,85 @@ Downtimes Examples
 ------------------
 List downtimes
 GET /api/downtimes?per_page=10&period_start=2026-04-01&period_end=2026-04-30&machine_id=1&technician_id=1
+
+Reportings Examples
+-------------------
+List reportings
+GET /api/reportings?per_page=10&search=RPT&machine_id=1&status=1
+
+Get reporting detail
+GET /api/reportings/{reporting}
+
+Create reporting
+POST /api/reportings
+{
+  "machine_id": 1,
+  "position_id": 1,
+  "part_id": 1,
+  "part_serial_number_id": 1,
+  "division_id": 1,
+  "operation_id": 1,
+  "reason_id": 1,
+  "informant_id": 1,
+  "reporting_type": 1,
+  "reporting_date": "2026-04-22 10:00:00",
+  "reporting_notes": "Mesin abnormal"
+}
+
+Update reporting
+PUT /api/reportings/{reporting}
+{
+  "machine_id": 1,
+  "position_id": 1,
+  "part_id": 1,
+  "part_serial_number_id": 1,
+  "division_id": 1,
+  "operation_id": 1,
+  "reason_id": 1,
+  "informant_id": 1,
+  "reporting_type": 1,
+  "reporting_date": "2026-04-22 10:00:00",
+  "reporting_notes": "Catatan pelaporan update"
+}
+
+Delete reporting
+DELETE /api/reportings/{reporting}
+
+Get reporting types
+GET /api/reportings/types
+
+Get reporting shift time
+GET /api/reportings/time?reporting_date=2026-04-22%2010:00:00
+
+Reporting Reports Examples
+--------------------------
+List reporting reports
+GET /api/reporting-reports?per_page=10&period_start=2026-04-01&period_end=2026-04-30&machine_id=1&status=5
+Headers:
+Authorization: Bearer <your_jwt_token>
+Accept: application/json
+Content-Type: application/json
+
+List reporting reports filtered by technician and group
+GET /api/reporting-reports?per_page=10&technician_id=1&group_id=1&reporting_type=1
+Headers:
+Authorization: Bearer <your_jwt_token>
+Accept: application/json
+Content-Type: application/json
+
+Search reporting reports
+GET /api/reporting-reports?per_page=10&search=RPT
+Headers:
+Authorization: Bearer <your_jwt_token>
+Accept: application/json
+Content-Type: application/json
+
+Get reporting report statuses
+GET /api/reporting-reports/statuses
+Headers:
+Authorization: Bearer <your_jwt_token>
+Accept: application/json
+Content-Type: application/json
 
 Jobs Examples
 -------------
@@ -518,6 +660,75 @@ PUT /api/fbdts/2026
     }
   ]
 }
+
+Targets Examples
+----------------
+List targets
+GET /api/targets?per_page=10&year=2026&part_id=1
+Headers:
+Authorization: Bearer <your_jwt_token>
+Accept: application/json
+Content-Type: application/json
+
+Check target
+GET /api/targets/check?year=2026&part_id=1
+Headers:
+Authorization: Bearer <your_jwt_token>
+Accept: application/json
+Content-Type: application/json
+
+Get target detail
+GET /api/targets/{part}/{year}
+Headers:
+Authorization: Bearer <your_jwt_token>
+Accept: application/json
+Content-Type: application/json
+
+Create target
+POST /api/targets
+Headers:
+Authorization: Bearer <your_jwt_token>
+Accept: application/json
+Content-Type: application/json
+{
+  "year": 2026,
+  "part_id": 1,
+  "targets": [
+    {
+      "month": 1,
+      "mtbf": 120,
+      "mttr": 30
+    },
+    {
+      "month": 2,
+      "mtbf": 130,
+      "mttr": 28
+    }
+  ]
+}
+
+Update target
+PUT /api/targets/{part}/{year}
+Headers:
+Authorization: Bearer <your_jwt_token>
+Accept: application/json
+Content-Type: application/json
+{
+  "targets": [
+    {
+      "month": 1,
+      "mtbf": 140,
+      "mttr": 25
+    }
+  ]
+}
+
+Delete target
+DELETE /api/targets/{part}/{year}
+Headers:
+Authorization: Bearer <your_jwt_token>
+Accept: application/json
+Content-Type: application/json
 
 Groups Examples
 ---------------
@@ -759,16 +970,18 @@ Parts Examples
 --------------
 List part_active
 GET /api/part_active?per_page=10&search=part
+Returns total_operation, total_reason, and total_serial_number for each part.
 
 Toggle part status 99 <-> 1
 PUT /api/part_setstatus/{part}
 
 List parts
 GET /api/parts?per_page=10&search=part
+Returns total_operation, total_reason, and total_serial_number for each part.
 
 Get part detail
 GET /api/parts/{part}
-Returned detail includes operation_id, operation_name, reason_id, and reason_name arrays.
+Returned detail includes operation_id, operation_name, reason_id, reason_name, total_operation, total_reason, and total_serial_number.
 
 Create part
 POST /api/parts
@@ -935,6 +1148,13 @@ DELETE /api/technicians/{technician}
 
 Users Examples
 --------------
+List users
+GET /api/users?per_page=10&search=admin&status=1&is_admin=1
+Headers:
+Authorization: Bearer <your_jwt_token>
+Accept: application/json
+Content-Type: application/json
+
 Toggle user status 99 <-> 1
 PUT /api/user_setstatus/{user}
 
@@ -953,6 +1173,71 @@ PUT /api/users/{user}
 
 Delete user
 DELETE /api/users/{user}
+
+Roles Examples
+--------------
+List roles
+GET /api/roles?per_page=10&search=maintenance
+Headers:
+Authorization: Bearer <your_jwt_token>
+Accept: application/json
+Content-Type: application/json
+
+Get role detail
+GET /api/roles/{role}
+Headers:
+Authorization: Bearer <your_jwt_token>
+Accept: application/json
+Content-Type: application/json
+
+Create role
+POST /api/roles
+Headers:
+Authorization: Bearer <your_jwt_token>
+Accept: application/json
+Content-Type: application/json
+{
+  "name": "maintenance-admin",
+  "display_name": "Maintenance Admin",
+  "guard_name": "api",
+  "area_id": 1
+}
+
+Update role
+PUT /api/roles/{role}
+Headers:
+Authorization: Bearer <your_jwt_token>
+Accept: application/json
+Content-Type: application/json
+{
+  "display_name": "Maintenance Supervisor",
+  "guard_name": "api",
+  "area_id": 1
+}
+
+Delete role
+DELETE /api/roles/{role}
+Headers:
+Authorization: Bearer <your_jwt_token>
+Accept: application/json
+Content-Type: application/json
+
+Get role permissions
+GET /api/roles/{role}/permissions
+Headers:
+Authorization: Bearer <your_jwt_token>
+Accept: application/json
+Content-Type: application/json
+
+Update role permissions
+PUT /api/roles/{role}/permissions
+Headers:
+Authorization: Bearer <your_jwt_token>
+Accept: application/json
+Content-Type: application/json
+{
+  "permission_ids": [1, 2, 3]
+}
 
 Permissions Examples
 --------------------

@@ -16,9 +16,14 @@ use App\Http\Controllers\Api\OperationController;
 use App\Http\Controllers\Api\PartController;
 use App\Http\Controllers\Api\PermissionsController;
 use App\Http\Controllers\Api\PositionController;
+use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\ReasonController;
+use App\Http\Controllers\Api\ReportingController;
+use App\Http\Controllers\Api\ReportingReportController;
+use App\Http\Controllers\Api\RolesController;
 use App\Http\Controllers\Api\SerialNumberController;
 use App\Http\Controllers\Api\ShiftController;
+use App\Http\Controllers\Api\TargetController;
 use App\Http\Controllers\Api\TechnicianController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
@@ -32,10 +37,25 @@ Route::middleware('auth:api')->group(function () {
     // Authenticated session routes
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
+    Route::get('/profile', [ProfileController::class, 'show']);
+    Route::post('/profile', [ProfileController::class, 'update']);
     Route::get('/dashboard', [DashboardController::class, 'index']);
 
     // Downtime routes
     Route::get('/downtimes', [DowntimeController::class, 'index']);
+
+    // Reporting routes
+    Route::get('/reportings/types', [ReportingController::class, 'types']);
+    Route::get('/reportings/time', [ReportingController::class, 'time']);
+    Route::get('/reportings', [ReportingController::class, 'index']);
+    Route::get('/reportings/{reporting}', [ReportingController::class, 'show']);
+    Route::post('/reportings', [ReportingController::class, 'store']);
+    Route::put('/reportings/{reporting}', [ReportingController::class, 'update']);
+    Route::delete('/reportings/{reporting}', [ReportingController::class, 'destroy']);
+
+    // Reporting report routes
+    Route::get('/reporting-reports', [ReportingReportController::class, 'index']);
+    Route::get('/reporting-reports/statuses', [ReportingReportController::class, 'statuses']);
 
     // Job routes
     Route::get('/jobs', [JobController::class, 'index']);
@@ -59,6 +79,14 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/fbdts/{year}', [FbdtController::class, 'show']);
     Route::post('/fbdts', [FbdtController::class, 'store']);
     Route::put('/fbdts/{year}', [FbdtController::class, 'update']);
+
+    // Target routes
+    Route::get('/targets', [TargetController::class, 'index']);
+    Route::get('/targets/check', [TargetController::class, 'check']);
+    Route::get('/targets/{part}/{year}', [TargetController::class, 'show']);
+    Route::post('/targets', [TargetController::class, 'store']);
+    Route::put('/targets/{part}/{year}', [TargetController::class, 'update']);
+    Route::delete('/targets/{part}/{year}', [TargetController::class, 'destroy']);
 
     // Area routes
     Route::get('/areas_active', [AreaController::class, 'areaActive']);
@@ -185,6 +213,14 @@ Route::middleware('auth:api')->group(function () {
 
     // Admin-only user management routes
     Route::middleware('admin')->group(function () {
+        Route::get('/roles', [RolesController::class, 'index']);
+        Route::get('/roles/{role}', [RolesController::class, 'show']);
+        Route::post('/roles', [RolesController::class, 'store']);
+        Route::put('/roles/{role}', [RolesController::class, 'update']);
+        Route::delete('/roles/{role}', [RolesController::class, 'destroy']);
+        Route::get('/roles/{role}/permissions', [RolesController::class, 'permissions']);
+        Route::put('/roles/{role}/permissions', [RolesController::class, 'updatePermissions']);
+
         Route::get('/permissions', [PermissionsController::class, 'index']);
         Route::get('/permissions/{permission}', [PermissionsController::class, 'show']);
         Route::post('/permissions', [PermissionsController::class, 'store']);
@@ -192,6 +228,7 @@ Route::middleware('auth:api')->group(function () {
         Route::delete('/permissions/{permission}', [PermissionsController::class, 'destroy']);
 
         Route::put('/users/{user}', [UserController::class, 'update']);
+        Route::get('/users', [UserController::class, 'index']);
         Route::put('/user_setstatus/{user}', [UserController::class, 'userSetstatus']);
         Route::delete('/users/{user}', [UserController::class, 'destroy']);
     });

@@ -1,0 +1,21 @@
+<?php
+
+namespace App\Http\Requests\Api;
+
+class UpdateTargetRequest extends BaseApiFormRequest
+{
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    public function rules(): array
+    {
+        return [
+            'targets' => ['required', 'array', 'min:1'],
+            'targets.*.month' => ['required', 'integer', 'between:1,12', 'distinct'],
+            'targets.*.mtbf' => ['nullable', 'numeric'],
+            'targets.*.mttr' => ['nullable', 'numeric'],
+        ];
+    }
+}

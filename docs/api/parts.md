@@ -22,7 +22,7 @@ Part API routes are defined in `routes/api.php`.
 
 ### GET `/api/parts`
 
-Get paginated part data.
+Get paginated part data. Each item includes `total_operation`, `total_reason`, and `total_serial_number`.
 
 Query parameters:
 
@@ -32,7 +32,7 @@ Query parameters:
 
 ### GET `/api/part_active`
 
-Get paginated part data where `status != 11`.
+Get paginated part data where `status != 11`. Each item includes `total_operation`, `total_reason`, and `total_serial_number`.
 
 Query parameters:
 
@@ -48,6 +48,9 @@ Detail responses include assigned operations and reasons:
 
 ```json
 {
+  "total_operation": 2,
+  "total_reason": 2,
+  "total_serial_number": 5,
   "operation_id": ["1", "2"],
   "operation_name": ["Check Motor", "Clean Unit"],
   "reason_id": ["1", "2"],

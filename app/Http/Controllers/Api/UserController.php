@@ -6,11 +6,49 @@ use App\Helpers\ApiResponseHelper;
 use App\Helpers\UserDataHelper;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\UpdateUserRequest;
+use App\Http\Requests\Api\UserIndexRequest;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller
 {
+    public function index(UserIndexRequest $request)
+    {
+        try {
+            $perPage = (int) $request->integer('per_page', 10);
+            $perPage = max(1, min($perPage, 100));
+            $search = trim((string) $request->query('search', ''));
+
+            $users = User::query()
+                ->with('area')
+                ->when($search !== '', function ($query) use ($search) {
+                    $query->where(function ($subQuery) use ($search) {
+                        $subQuery->where('name', 'like', '%'.$search.'%')
+                            ->orWhere('email', 'like', '%'.$search.'%')
+                            ->orWhere('username', 'like', '%'.$search.'%');
+                    });
+                })
+                ->when($request->filled('area_id'), fn ($query) => $query->where('area_id', $request->integer('area_id')))
+                ->when($request->filled('status'), fn ($query) => $query->where('status', $request->integer('status')))
+                ->when($request->has('is_operator'), fn ($query) => $query->where('is_operator', $request->boolean('is_operator')))
+                ->when($request->has('is_admin'), fn ($query) => $query->where('is_admin', $request->boolean('is_admin')))
+                ->orderBy('id')
+                ->paginate($perPage)
+                ->appends($request->query());
+
+            return ApiResponseHelper::success('Data retrieved successfully', $users->getCollection()->map(
+                fn (User $user) => UserDataHelper::transform($user)
+            )->all(), [
+                'current_page' => $users->currentPage(),
+                'last_page' => $users->lastPage(),
+                'per_page' => $users->perPage(),
+                'total' => $users->total(),
+            ]);
+        } catch (\Throwable $exception) {
+            return ApiResponseHelper::error('Failed to retrieve users');
+        }
+    }
+
     public function update(UpdateUserRequest $request, User $user)
     {
         try {

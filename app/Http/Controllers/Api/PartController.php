@@ -23,6 +23,7 @@ class PartController extends Controller
 
             $partsQuery = Part::query()
                 ->with('area')
+                ->withCount(['operations', 'reasons', 'serialNumbers'])
                 ->where('status', '<>', 11)
                 ->when($user?->area_id !== null, fn ($query) => $query->where('area_id', $user->area_id), fn ($query) => $query->whereNull('area_id'))
                 ->when($search !== '', function ($query) use ($search) {
@@ -59,6 +60,7 @@ class PartController extends Controller
 
             $partsQuery = Part::query()
                 ->with('area')
+                ->withCount(['operations', 'reasons', 'serialNumbers'])
                 ->where('status', '<>', 99)
                 ->when($user?->area_id !== null, fn ($query) => $query->where('area_id', $user->area_id), fn ($query) => $query->whereNull('area_id'))
                 ->when($search !== '', function ($query) use ($search) {
@@ -103,7 +105,7 @@ class PartController extends Controller
                 return $part;
             });
 
-            $part->load(['area', 'operations', 'reasons']);
+            $part->load(['area', 'operations', 'reasons'])->loadCount(['operations', 'reasons', 'serialNumbers']);
 
             return ApiResponseHelper::success('Part created successfully', PartDataHelper::transform($part), null, 201);
         } catch (\Throwable $exception) {
@@ -122,7 +124,7 @@ class PartController extends Controller
                 return ApiResponseHelper::error('Resource not found', null, 404);
             }
 
-            $part->load(['area', 'operations', 'reasons']);
+            $part->load(['area', 'operations', 'reasons'])->loadCount(['operations', 'reasons', 'serialNumbers']);
 
             return ApiResponseHelper::success('Data retrieved successfully', PartDataHelper::transform($part));
         } catch (\Throwable $exception) {
@@ -152,7 +154,7 @@ class PartController extends Controller
                 $part->reasons()->sync($request->validated('reason_id') ?? []);
             });
 
-            $part->refresh()->load(['area', 'operations', 'reasons']);
+            $part->refresh()->load(['area', 'operations', 'reasons'])->loadCount(['operations', 'reasons', 'serialNumbers']);
 
             return ApiResponseHelper::success('Part updated successfully', PartDataHelper::transform($part));
         } catch (\Throwable $exception) {

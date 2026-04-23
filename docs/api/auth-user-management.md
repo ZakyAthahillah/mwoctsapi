@@ -98,6 +98,31 @@ Returned data includes:
 - `area.name`
 - `area.object_name`
 
+### GET `/api/profile`
+
+Get the authenticated user's full profile.
+
+Protected endpoint: `auth:api`
+
+### POST `/api/profile`
+
+Update the authenticated user's own profile.
+
+Protected endpoint: `auth:api`
+
+Request body:
+
+```json
+{
+  "name": "Updated User",
+  "email": "updated@example.com",
+  "username": "updateduser",
+  "image": "images/users/1/profile.png",
+  "password": "newpassword",
+  "password_confirmation": "newpassword"
+}
+```
+
 ### POST `/api/refresh`
 
 Refresh the current JWT token and return a new bearer token.
@@ -144,6 +169,21 @@ Notes:
 
 - Setelah refresh, client harus menyimpan dan memakai token baru untuk request berikutnya.
 - Jika token tidak dikirim atau sudah tidak bisa di-refresh, API akan mengembalikan `401 Unauthorized`.
+
+### GET `/api/users`
+
+Get paginated users. This endpoint is restricted to admin users.
+
+Protected endpoint: `auth:api`, `admin`
+
+Query parameters:
+
+- `per_page` optional, default `10`, max `100`
+- `search` optional, searches name, email, and username
+- `area_id` optional
+- `status` optional
+- `is_operator` optional boolean
+- `is_admin` optional boolean
 
 ### PUT `/api/users/{id}`
 

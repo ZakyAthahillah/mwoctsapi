@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Area;
 use App\Models\Operation;
 use App\Models\Part;
+use App\Models\PartSerialNumber;
 use App\Models\Reason;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -19,6 +20,15 @@ class PartApiTest extends TestCase
         $area = Area::factory()->create();
         $user = User::factory()->create(['area_id' => $area->id]);
         Part::factory()->forArea($area)->count(12)->create();
+        $partWithCounts = Part::factory()->forArea($area)->create([
+            'code' => 'PRT-COUNT',
+        ]);
+        $operationOne = Operation::factory()->forArea($area)->create();
+        $operationTwo = Operation::factory()->forArea($area)->create();
+        $reason = Reason::factory()->forArea($area)->create();
+        $partWithCounts->operations()->sync([$operationOne->id, $operationTwo->id]);
+        $partWithCounts->reasons()->sync([$reason->id]);
+        PartSerialNumber::factory()->forArea($area)->forPart($partWithCounts)->count(3)->create();
         Part::factory()->forArea($area)->deletedStatus()->create();
 
         $token = auth('api')->login($user);
@@ -31,9 +41,13 @@ class PartApiTest extends TestCase
             ->assertJsonPath('message', 'Data retrieved successfully')
             ->assertJsonPath('meta.current_page', 1)
             ->assertJsonPath('meta.per_page', 10)
-            ->assertJsonPath('meta.total', 12);
+            ->assertJsonPath('meta.total', 13);
 
         $this->assertCount(10, $response->json('data'));
+        $this->assertTrue(collect($response->json('data'))->contains(fn (array $item) => $item['code'] === 'PRT-COUNT'
+            && $item['total_operation'] === 2
+            && $item['total_reason'] === 1
+            && $item['total_serial_number'] === 3));
     }
 
     public function test_authenticated_user_can_list_part_active_with_status_not_equal_eleven(): void
@@ -80,6 +94,7 @@ class PartApiTest extends TestCase
         $reason = Reason::factory()->forArea($areaModel)->create(['name' => 'Worn Out']);
         $part->operations()->sync([$operation->id]);
         $part->reasons()->sync([$reason->id]);
+        PartSerialNumber::factory()->forArea($areaModel)->forPart($part)->count(2)->create();
         $user = User::factory()->create(['area_id' => $areaModel->id]);
 
         $token = auth('api')->login($user);
@@ -90,6 +105,9 @@ class PartApiTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('success', true)
             ->assertJsonPath('data.code', 'PRT001')
+            ->assertJsonPath('data.total_operation', 1)
+            ->assertJsonPath('data.total_reason', 1)
+            ->assertJsonPath('data.total_serial_number', 2)
             ->assertJsonPath('data.operation_id.0', (string) $operation->id)
             ->assertJsonPath('data.operation_name.0', 'Replace Bearing')
             ->assertJsonPath('data.reason_id.0', (string) $reason->id)

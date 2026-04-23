@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Part extends Model
 {
@@ -37,5 +38,10 @@ class Part extends Model
     public function reasons(): BelongsToMany
     {
         return $this->belongsToMany(Reason::class, 'part_reason', 'part_id', 'reason_id');
+    }
+
+    public function serialNumbers(): HasMany
+    {
+        return $this->hasMany(PartSerialNumber::class, 'part_id');
     }
 }

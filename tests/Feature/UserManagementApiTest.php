@@ -11,6 +11,74 @@ class UserManagementApiTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_admin_can_list_users_with_pagination_and_filters(): void
+    {
+        $admin = User::factory()->admin()->create([
+            'name' => 'Admin User',
+            'email' => 'admin@example.com',
+            'status' => 1,
+        ]);
+        $area = Area::factory()->create();
+        User::factory()->create([
+            'area_id' => $area->id,
+            'name' => 'Operator One',
+            'email' => 'operator@example.com',
+            'username' => 'operatorone',
+            'status' => 1,
+            'is_operator' => true,
+            'is_admin' => false,
+        ]);
+        User::factory()->create([
+            'name' => 'Inactive User',
+            'email' => 'inactive@example.com',
+            'status' => 99,
+            'is_operator' => true,
+        ]);
+
+        $token = auth('api')->login($admin);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/users?per_page=10&search=operator&status=1&is_operator=1&is_admin=0&area_id='.$area->id);
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('message', 'Data retrieved successfully')
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('data.0.name', 'Operator One')
+            ->assertJsonPath('data.0.area_name', $area->name)
+            ->assertJsonPath('data.0.is_operator', true)
+            ->assertJsonPath('data.0.is_admin', false);
+    }
+
+    public function test_list_users_returns_validation_error_for_invalid_filter(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $token = auth('api')->login($admin);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/users?per_page=101');
+
+        $response->assertStatus(400)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('message', 'Bad request')
+            ->assertJsonStructure([
+                'errors' => ['per_page'],
+            ]);
+    }
+
+    public function test_non_admin_cannot_list_users(): void
+    {
+        $user = User::factory()->create(['is_admin' => false]);
+        $token = auth('api')->login($user);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/users');
+
+        $response->assertStatus(403)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('message', 'Forbidden');
+    }
+
     public function test_admin_can_update_another_user(): void
     {
         $admin = User::factory()->admin()->create();

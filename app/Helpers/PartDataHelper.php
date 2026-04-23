@@ -16,6 +16,9 @@ class PartDataHelper
             'name' => $part->name,
             'description' => $part->description,
             'status' => (int) $part->status,
+            'total_operation' => (int) ($part->operations_count ?? 0),
+            'total_reason' => (int) ($part->reasons_count ?? 0),
+            'total_serial_number' => (int) ($part->serial_numbers_count ?? 0),
             'created_at' => optional($part->created_at)?->format('Y-m-d H:i:s'),
             'updated_at' => optional($part->updated_at)?->format('Y-m-d H:i:s'),
         ];
