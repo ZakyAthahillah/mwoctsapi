@@ -61,7 +61,6 @@ class PartController extends Controller
             $partsQuery = Part::query()
                 ->with('area')
                 ->withCount(['operations', 'reasons', 'serialNumbers'])
-                ->where('status', '<>', 99)
                 ->when($user?->area_id !== null, fn ($query) => $query->where('area_id', $user->area_id), fn ($query) => $query->whereNull('area_id'))
                 ->when($search !== '', function ($query) use ($search) {
                     $query->where(function ($subQuery) use ($search) {
@@ -84,6 +83,56 @@ class PartController extends Controller
             ]);
         } catch (\Throwable $exception) {
             return ApiResponseHelper::error('Failed to retrieve parts');
+        }
+    }
+
+    public function getDataArray(Request $request)
+    {
+        try {
+            $user = auth('api')->user();
+            $search = trim((string) $request->query('term', $request->query('search', '')));
+
+            $parts = Part::query()
+                ->when($user?->area_id !== null, fn ($query) => $query->where('area_id', $user->area_id), fn ($query) => $query->whereNull('area_id'))
+                ->where('status', '<>', 99)
+                ->when($search !== '', function ($query) use ($search) {
+                    $query->where(function ($subQuery) use ($search) {
+                        $subQuery->where('code', 'like', '%'.$search.'%')
+                            ->orWhere('name', 'like', '%'.$search.'%')
+                            ->orWhere('description', 'like', '%'.$search.'%');
+                    });
+                })
+                ->orderBy('name')
+                ->get(['id', 'name']);
+
+            return ApiResponseHelper::success('Data retrieved successfully', PartDataHelper::selectDataArray($parts));
+        } catch (\Throwable $exception) {
+            return ApiResponseHelper::error('Failed to retrieve part data array');
+        }
+    }
+
+    public function getFullDataArray(Request $request)
+    {
+        try {
+            $user = auth('api')->user();
+            $search = trim((string) $request->query('term', $request->query('search', '')));
+
+            $parts = Part::query()
+                ->when($user?->area_id !== null, fn ($query) => $query->where('area_id', $user->area_id), fn ($query) => $query->whereNull('area_id'))
+                ->where('status', '<>', 99)
+                ->when($search !== '', function ($query) use ($search) {
+                    $query->where(function ($subQuery) use ($search) {
+                        $subQuery->where('code', 'like', '%'.$search.'%')
+                            ->orWhere('name', 'like', '%'.$search.'%')
+                            ->orWhere('description', 'like', '%'.$search.'%');
+                    });
+                })
+                ->orderBy('name')
+                ->get(['id', 'code', 'name', 'description']);
+
+            return ApiResponseHelper::success('Data retrieved successfully', PartDataHelper::fullDataArray($parts));
+        } catch (\Throwable $exception) {
+            return ApiResponseHelper::error('Failed to retrieve full part data array');
         }
     }
 
@@ -129,6 +178,37 @@ class PartController extends Controller
             return ApiResponseHelper::success('Data retrieved successfully', PartDataHelper::transform($part));
         } catch (\Throwable $exception) {
             return ApiResponseHelper::error('Failed to retrieve part');
+        }
+    }
+
+    public function getDetail(Part $part)
+    {
+        return $this->show($part);
+    }
+
+    public function getOperation(Request $request, Part $part)
+    {
+        try {
+            $user = auth('api')->user();
+            $search = trim((string) $request->query('term', $request->query('search', '')));
+
+            if ((int) $part->status === 99 || (int) $part->area_id !== (int) $user?->area_id) {
+                return ApiResponseHelper::error('Resource not found', null, 404);
+            }
+
+            $operations = $part->operations()
+                ->when($search !== '', function ($query) use ($search) {
+                    $query->where(function ($subQuery) use ($search) {
+                        $subQuery->where('code', 'like', '%'.$search.'%')
+                            ->orWhere('name', 'like', '%'.$search.'%');
+                    });
+                })
+                ->orderBy('name')
+                ->get(['operations.id', 'operations.code', 'operations.name']);
+
+            return ApiResponseHelper::success('Data retrieved successfully', PartDataHelper::operationOptions($operations));
+        } catch (\Throwable $exception) {
+            return ApiResponseHelper::error('Failed to retrieve part operations');
         }
     }
 

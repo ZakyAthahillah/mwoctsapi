@@ -41,13 +41,14 @@ class PartApiTest extends TestCase
             ->assertJsonPath('message', 'Data retrieved successfully')
             ->assertJsonPath('meta.current_page', 1)
             ->assertJsonPath('meta.per_page', 10)
-            ->assertJsonPath('meta.total', 13);
+            ->assertJsonPath('meta.total', 14);
 
         $this->assertCount(10, $response->json('data'));
         $this->assertTrue(collect($response->json('data'))->contains(fn (array $item) => $item['code'] === 'PRT-COUNT'
             && $item['total_operation'] === 2
             && $item['total_reason'] === 1
             && $item['total_serial_number'] === 3));
+        $this->assertTrue(collect($response->json('data'))->contains(fn (array $item) => $item['code'] === $partWithCounts->code));
     }
 
     public function test_authenticated_user_can_list_part_active_with_status_not_equal_eleven(): void
@@ -83,6 +84,51 @@ class PartApiTest extends TestCase
             ->assertJsonPath('meta.total', 2);
     }
 
+    public function test_authenticated_user_can_get_part_data_array_compatibility_route(): void
+    {
+        $area = Area::factory()->create();
+        $otherArea = Area::factory()->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
+        Part::factory()->forArea($area)->create(['code' => 'PRT-A', 'name' => 'Alpha']);
+        Part::factory()->forArea($area)->create(['code' => 'PRT-B', 'name' => 'Beta']);
+        Part::factory()->forArea($otherArea)->create(['code' => 'PRT-X', 'name' => 'Outside']);
+
+        $token = auth('api')->login($user);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/part/get-data-array?term=PRT');
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('message', 'Data retrieved successfully');
+
+        $this->assertCount(2, $response->json('data'));
+        $this->assertSame('Alpha', $response->json('data.0.text'));
+        $this->assertSame('Beta', $response->json('data.1.text'));
+    }
+
+    public function test_authenticated_user_can_get_part_full_data_array_compatibility_route(): void
+    {
+        $area = Area::factory()->create();
+        $user = User::factory()->create(['area_id' => $area->id]);
+        Part::factory()->forArea($area)->create([
+            'code' => 'PRT-A',
+            'name' => 'Alpha',
+            'description' => 'Part alpha',
+        ]);
+
+        $token = auth('api')->login($user);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/part/get-full-data-array?term=PRT-A');
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.0.code', 'PRT-A')
+            ->assertJsonPath('data.0.name', 'Alpha')
+            ->assertJsonPath('data.0.description', 'Part alpha');
+    }
+
     public function test_authenticated_user_can_view_part_detail(): void
     {
         $areaModel = Area::factory()->create();
@@ -112,6 +158,38 @@ class PartApiTest extends TestCase
             ->assertJsonPath('data.operation_name.0', 'Replace Bearing')
             ->assertJsonPath('data.reason_id.0', (string) $reason->id)
             ->assertJsonPath('data.reason_name.0', 'Worn Out');
+    }
+
+    public function test_authenticated_user_can_view_legacy_part_detail_and_operations_routes(): void
+    {
+        $areaModel = Area::factory()->create();
+        $part = Part::factory()->create([
+            'area_id' => $areaModel->id,
+            'code' => 'PRT002',
+        ]);
+        $operationOne = Operation::factory()->forArea($areaModel)->create([
+            'code' => 'OP-01',
+            'name' => 'Inspect',
+        ]);
+        $operationTwo = Operation::factory()->forArea($areaModel)->create([
+            'code' => 'OP-02',
+            'name' => 'Clean',
+        ]);
+        $part->operations()->sync([$operationOne->id, $operationTwo->id]);
+        $user = User::factory()->create(['area_id' => $areaModel->id]);
+
+        $token = auth('api')->login($user);
+
+        $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/part/'.$part->id.'/detail')
+            ->assertOk()
+            ->assertJsonPath('data.code', 'PRT002');
+
+        $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/part/'.$part->id.'/get-operation?term=Clean')
+            ->assertOk()
+            ->assertJsonPath('data.0.id', (string) $operationTwo->id)
+            ->assertJsonPath('data.0.text', 'OP-02 : Clean');
     }
 
     public function test_authenticated_user_can_create_part(): void

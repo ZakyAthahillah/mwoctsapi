@@ -152,6 +152,10 @@ Route::middleware('auth:api')->group(function () {
     // Part routes
     Route::get('/part_active', [PartController::class, 'partActive']);
     Route::put('/part_setstatus/{part}', [PartController::class, 'partSetstatus']);
+    Route::match(['get', 'post'], '/part/get-data-array', [PartController::class, 'getDataArray']);
+    Route::match(['get', 'post'], '/part/get-full-data-array', [PartController::class, 'getFullDataArray']);
+    Route::get('/part/{part}/detail', [PartController::class, 'getDetail']);
+    Route::match(['get', 'post'], '/part/{part}/get-operation', [PartController::class, 'getOperation']);
     Route::get('/parts', [PartController::class, 'index']);
     Route::get('/parts/{part}', [PartController::class, 'show']);
     Route::post('/parts', [PartController::class, 'store']);

@@ -23,6 +23,7 @@ Part API routes are defined in `routes/api.php`.
 ### GET `/api/parts`
 
 Get paginated part data. Each item includes `total_operation`, `total_reason`, and `total_serial_number`.
+This list includes both active parts and soft-deleted parts with `status = 99`.
 
 Query parameters:
 
@@ -57,6 +58,37 @@ Detail responses include assigned operations and reasons:
   "reason_name": ["Broken", "Leaking"]
 }
 ```
+
+### GET `/api/part/{id}/detail`
+
+Legacy compatibility route for the same part detail response as `GET /api/parts/{id}`.
+
+### GET `/api/part/get-data-array`
+
+Get a lightweight part selector list.
+
+Query parameters:
+
+- `term` optional search term
+- `search` optional alias for `term`
+
+### GET `/api/part/get-full-data-array`
+
+Get a full part selector list including `code`, `name`, and `description`.
+
+Query parameters:
+
+- `term` optional search term
+- `search` optional alias for `term`
+
+### GET `/api/part/{id}/get-operation`
+
+Get operations assigned to a part.
+
+Query parameters:
+
+- `term` optional search term
+- `search` optional alias for `term`
 
 ### POST `/api/parts`
 
@@ -103,9 +135,39 @@ Delete a part logically by changing `status` to `99`.
 
 Toggle part status between `99` and `1`.
 
+### Legacy compatibility examples
+
+List part data array
+GET /api/part/get-data-array?term=prt
+Headers:
+Authorization: Bearer <your_jwt_token>
+Accept: application/json
+Content-Type: application/json
+
+List full part data array
+GET /api/part/get-full-data-array?term=prt
+Headers:
+Authorization: Bearer <your_jwt_token>
+Accept: application/json
+Content-Type: application/json
+
+Get legacy part detail
+GET /api/part/{id}/detail
+Headers:
+Authorization: Bearer <your_jwt_token>
+Accept: application/json
+Content-Type: application/json
+
+Get part operations
+GET /api/part/{id}/get-operation?term=clean
+Headers:
+Authorization: Bearer <your_jwt_token>
+Accept: application/json
+Content-Type: application/json
+
 ## Notes
 
-- Active part queries exclude records with `status = 99`.
+- `GET /api/parts` includes records with `status = 99`.
 - `GET /api/part_active` excludes records with `status = 11`.
 - `PUT /api/part_setstatus/{id}` only supports current status `1` and `99`.
 - `GET` dan `POST` menggunakan `area_id` dari user login.

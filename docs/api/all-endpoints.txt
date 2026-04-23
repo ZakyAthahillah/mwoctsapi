@@ -151,6 +151,13 @@ Parts
 -----
 GET    /api/part_active
 PUT    /api/part_setstatus/{part}
+GET    /api/part/get-data-array
+POST   /api/part/get-data-array
+GET    /api/part/get-full-data-array
+POST   /api/part/get-full-data-array
+GET    /api/part/{part}/detail
+GET    /api/part/{part}/get-operation
+POST   /api/part/{part}/get-operation
 GET    /api/parts
 POST   /api/parts
 GET    /api/parts/{part}
@@ -975,9 +982,38 @@ Returns total_operation, total_reason, and total_serial_number for each part.
 Toggle part status 99 <-> 1
 PUT /api/part_setstatus/{part}
 
+Legacy part data array
+GET /api/part/get-data-array?term=part
+Headers:
+Authorization: Bearer <your_jwt_token>
+Accept: application/json
+Content-Type: application/json
+
+Legacy full part data array
+GET /api/part/get-full-data-array?term=part
+Headers:
+Authorization: Bearer <your_jwt_token>
+Accept: application/json
+Content-Type: application/json
+
+Legacy part detail
+GET /api/part/{part}/detail
+Headers:
+Authorization: Bearer <your_jwt_token>
+Accept: application/json
+Content-Type: application/json
+
+Legacy part operations
+GET /api/part/{part}/get-operation?term=clean
+Headers:
+Authorization: Bearer <your_jwt_token>
+Accept: application/json
+Content-Type: application/json
+
 List parts
 GET /api/parts?per_page=10&search=part
 Returns total_operation, total_reason, and total_serial_number for each part.
+Includes both active and soft-deleted parts with `status = 99`.
 
 Get part detail
 GET /api/parts/{part}

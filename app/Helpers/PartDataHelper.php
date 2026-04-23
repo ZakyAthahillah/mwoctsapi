@@ -47,4 +47,49 @@ class PartDataHelper
 
         return $payload;
     }
+
+    public static function selectDataArray(iterable $parts): array
+    {
+        $items = [];
+
+        foreach ($parts as $part) {
+            $items[] = [
+                'id' => (string) $part->id,
+                'text' => $part->name,
+            ];
+        }
+
+        return $items;
+    }
+
+    public static function fullDataArray(iterable $parts): array
+    {
+        $items = [];
+
+        foreach ($parts as $part) {
+            $items[] = [
+                'id' => (string) $part->id,
+                'text' => trim(($part->code ?? '').' : '.($part->name ?? '')),
+                'code' => $part->code,
+                'name' => $part->name,
+                'description' => $part->description,
+            ];
+        }
+
+        return $items;
+    }
+
+    public static function operationOptions(iterable $operations): array
+    {
+        $items = [];
+
+        foreach ($operations as $operation) {
+            $items[] = [
+                'id' => (string) $operation->id,
+                'text' => trim(($operation->code ?? '').' : '.($operation->name ?? '')),
+            ];
+        }
+
+        return $items;
+    }
 }
