@@ -18,8 +18,17 @@ class ReasonApiTest extends TestCase
     {
         $area = Area::factory()->create();
         $division = Division::factory()->forArea($area)->create();
+        $part = Part::factory()->forArea($area)->create([
+            'name' => 'HC Blower',
+        ]);
         $user = User::factory()->create(['area_id' => $area->id]);
-        Reason::factory()->forArea($area)->count(12)->create(['division_id' => $division->id]);
+        Reason::factory()->forArea($area)->count(11)->create(['division_id' => $division->id]);
+        $reasonWithRelations = Reason::factory()->forArea($area)->create([
+            'code' => 'RSN-REL',
+            'division_id' => $division->id,
+        ]);
+        $reasonWithRelations->divisions()->sync([$division->id]);
+        $reasonWithRelations->parts()->sync([$part->id]);
         Reason::factory()->forArea($area)->deletedStatus()->create(['division_id' => $division->id]);
 
         $token = auth('api')->login($user);
@@ -35,6 +44,9 @@ class ReasonApiTest extends TestCase
             ->assertJsonPath('meta.total', 12);
 
         $this->assertCount(10, $response->json('data'));
+        $this->assertTrue(collect($response->json('data'))->contains(fn (array $item) => $item['code'] === 'RSN-REL'
+            && $item['total_division'] === 1
+            && $item['total_part'] === 1));
     }
 
     public function test_authenticated_user_can_list_reason_active_with_status_not_equal_eleven(): void

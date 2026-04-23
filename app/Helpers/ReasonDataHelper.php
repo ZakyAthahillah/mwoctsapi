@@ -17,6 +17,8 @@ class ReasonDataHelper
             'division_id' => $reason->division_id !== null ? (string) $reason->division_id : null,
             'division_name' => $reason->division?->name,
             'status' => (int) $reason->status,
+            'total_division' => (int) ($reason->divisions_count ?? 0),
+            'total_part' => (int) ($reason->parts_count ?? 0),
             'created_at' => optional($reason->created_at)?->format('Y-m-d H:i:s'),
             'updated_at' => optional($reason->updated_at)?->format('Y-m-d H:i:s'),
         ];

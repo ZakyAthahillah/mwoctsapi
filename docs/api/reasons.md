@@ -23,6 +23,7 @@ Reason API routes are defined in `routes/api.php`.
 ### GET `/api/reasons`
 
 Get paginated reason data.
+Each item also includes `total_division` and `total_part`.
 
 Query parameters:
 
@@ -34,6 +35,7 @@ Query parameters:
 ### GET `/api/reason_active`
 
 Get paginated reason data where `status != 11`.
+Each item also includes `total_division` and `total_part`.
 
 Query parameters:
 
@@ -106,6 +108,7 @@ Toggle reason status between `99` and `1`.
 - `GET /api/reason_active` excludes records with `status = 11`.
 - `PUT /api/reason_setstatus/{id}` only supports current status `1` and `99`.
 - `GET` dan `POST` menggunakan `area_id` dari user login.
+- `GET /api/reasons` dan `GET /api/reason_active` menampilkan `total_division` dan `total_part`.
 - `division_id` optional dan bisa berisi satu atau lebih `division.id` aktif dari area reason.
 - `part_id` optional dan bisa berisi satu atau lebih `part.id` aktif dari area reason.
 - Validation is required for create and update requests.

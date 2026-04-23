@@ -24,6 +24,7 @@ class ReasonController extends Controller
 
             $reasonsQuery = Reason::query()
                 ->with(['area', 'division'])
+                ->withCount(['divisions', 'parts'])
                 ->where('status', '<>', 11)
                 ->when($user?->area_id !== null, fn ($query) => $query->where('area_id', $user->area_id), fn ($query) => $query->whereNull('area_id'))
                 ->when($divisionId !== null && $divisionId !== '', function ($query) use ($divisionId) {
@@ -66,6 +67,7 @@ class ReasonController extends Controller
 
             $reasonsQuery = Reason::query()
                 ->with(['area', 'division'])
+                ->withCount(['divisions', 'parts'])
                 ->where('status', '<>', 99)
                 ->when($user?->area_id !== null, fn ($query) => $query->where('area_id', $user->area_id), fn ($query) => $query->whereNull('area_id'))
                 ->when($divisionId !== null && $divisionId !== '', function ($query) use ($divisionId) {
