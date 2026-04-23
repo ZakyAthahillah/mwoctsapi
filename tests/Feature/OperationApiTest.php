@@ -46,10 +46,8 @@ class OperationApiTest extends TestCase
 
         $this->assertCount(10, $response->json('data'));
         $this->assertTrue(collect($response->json('data'))->contains(fn (array $item) => $item['code'] === 'OPR-REL'
-            && $item['division_id'] === [(string) $division->id]
-            && $item['division_name'] === ['Mechanical']
-            && $item['part_id'] === [(string) $part->id]
-            && $item['part_name'] === ['HC Blower']));
+            && $item['total_division'] === 1
+            && $item['total_part'] === 1));
     }
 
     public function test_authenticated_user_can_list_operation_active_with_status_not_equal_eleven(): void
@@ -73,8 +71,8 @@ class OperationApiTest extends TestCase
             ->assertJsonPath('meta.total', 2);
 
         $this->assertTrue(collect($response->json('data'))->contains(fn (array $item) => $item['code'] === 'OPR001'
-            && $item['division_id'] === [(string) $division->id]
-            && $item['part_id'] === [(string) $part->id]));
+            && $item['total_division'] === 1
+            && $item['total_part'] === 1));
     }
 
     public function test_authenticated_user_can_filter_operations_by_area(): void

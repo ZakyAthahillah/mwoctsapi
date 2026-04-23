@@ -938,12 +938,14 @@ Operations Examples
 -------------------
 List operation_active
 GET /api/operation_active?per_page=10&search=kerja
+Returns total_division and total_part for each operation.
 
 Toggle operation status 99 <-> 1
 PUT /api/operation_setstatus/{operation}
 
 List operations
 GET /api/operations?per_page=10&search=kerja
+Returns total_division and total_part for each operation.
 
 Create operation
 POST /api/operations

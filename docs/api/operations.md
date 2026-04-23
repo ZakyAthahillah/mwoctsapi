@@ -23,7 +23,7 @@ Operation API routes are defined in `routes/api.php`.
 ### GET `/api/operations`
 
 Get paginated operation data.
-Each item also includes `division_id`, `division_name`, `part_id`, and `part_name` arrays when relations exist.
+Each item also includes `total_division` and `total_part`.
 
 Query parameters:
 
@@ -34,7 +34,7 @@ Query parameters:
 ### GET `/api/operation_active`
 
 Get paginated operation data where `status != 11`.
-Each item also includes `division_id`, `division_name`, `part_id`, and `part_name` arrays when relations exist.
+Each item also includes `total_division` and `total_part`.
 
 Query parameters:
 
@@ -106,6 +106,7 @@ Toggle operation status between `99` and `1`.
 - `GET /api/operation_active` excludes records with `status = 11`.
 - `PUT /api/operation_setstatus/{id}` only supports current status `1` and `99`.
 - `GET` dan `POST` menggunakan `area_id` dari user login.
+- `GET /api/operations` dan `GET /api/operation_active` menampilkan `total_division` dan `total_part`.
 - `division_id` optional dan bisa berisi satu atau lebih `division.id` aktif dari area operation.
 - `part_id` optional dan bisa berisi satu atau lebih `part.id` aktif dari area operation.
 - Validation is required for create and update requests.

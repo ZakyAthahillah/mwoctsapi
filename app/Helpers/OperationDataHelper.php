@@ -15,6 +15,8 @@ class OperationDataHelper
             'code' => $operation->code,
             'name' => $operation->name,
             'status' => (int) $operation->status,
+            'total_division' => (int) ($operation->divisions_count ?? 0),
+            'total_part' => (int) ($operation->parts_count ?? 0),
             'created_at' => optional($operation->created_at)?->format('Y-m-d H:i:s'),
             'updated_at' => optional($operation->updated_at)?->format('Y-m-d H:i:s'),
         ];
