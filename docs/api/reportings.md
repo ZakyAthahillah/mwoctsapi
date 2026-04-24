@@ -18,7 +18,7 @@ Content-Type: application/json
 
 ### GET `/api/reportings`
 
-Get paginated reporting data for the authenticated user's area. Records with `status = 1` (`new`/`baru`) and `status = 99` (`deleted`) are not returned.
+Get paginated reporting data for the authenticated user's area.
 
 Query parameters:
 
@@ -104,4 +104,3 @@ Query parameters:
 - `reporting_date` is used to resolve `shift_id_reporting`.
 - The API reads and writes the existing `reportings` table.
 - Created reportings start with `status = 1`.
-- `GET /api/reportings` excludes new reportings with `status = 1`.

@@ -55,9 +55,8 @@ class ReportingApiTest extends TestCase
     public function test_authenticated_user_can_list_reportings_with_pagination(): void
     {
         $fixtures = $this->fixtures();
-        $this->insertReporting($fixtures, ['reporting_number' => 'RPT-001', 'status' => 2]);
-        $this->insertReporting($fixtures, ['reporting_number' => 'RPT-002', 'status' => 3]);
-        $this->insertReporting($fixtures, ['reporting_number' => 'RPT-NEW', 'status' => 1]);
+        $this->insertReporting($fixtures, ['reporting_number' => 'RPT-001']);
+        $this->insertReporting($fixtures, ['reporting_number' => 'RPT-002']);
         $this->insertReporting($this->fixtures(), ['reporting_number' => 'OTHER']);
         $token = auth('api')->login($fixtures['user']);
 
@@ -70,8 +69,6 @@ class ReportingApiTest extends TestCase
             ->assertJsonPath('meta.total', 2)
             ->assertJsonPath('data.0.reporting_number', 'RPT-002')
             ->assertJsonPath('data.0.machine_name', 'Machine A');
-
-        $this->assertNotContains('RPT-NEW', collect($response->json('data'))->pluck('reporting_number')->all());
     }
 
     public function test_authenticated_user_can_create_reporting(): void

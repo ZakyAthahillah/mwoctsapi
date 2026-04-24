@@ -25,7 +25,7 @@ class ReportingController extends Controller
             $perPage = max(1, min($perPage, 100));
 
             $reportings = ReportingQueryHelper::baseQuery()
-                ->whereNotIn('reportings.status', [1, 99])
+                ->where('reportings.status', '<>', 99)
                 ->when($user?->area_id !== null, fn ($query) => $query->where('reportings.area_id', $user->area_id), fn ($query) => $query->whereNull('reportings.area_id'))
                 ->when($request->filled('division_id'), fn ($query) => $query->where('reportings.division_id', $request->integer('division_id')))
                 ->when($request->filled('machine_id'), fn ($query) => $query->where('reportings.machine_id', $request->integer('machine_id')))

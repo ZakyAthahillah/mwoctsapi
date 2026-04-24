@@ -465,17 +465,7 @@ GET /api/downtimes?per_page=10&period_start=2026-04-01&period_end=2026-04-30&mac
 Reportings Examples
 -------------------
 List reportings
-GET /api/reportings?per_page=10&search=RPT&machine_id=1&status=2
-Headers:
-Authorization: Bearer <your_jwt_token>
-Accept: application/json
-Query params:
-per_page=10
-search=RPT
-machine_id=1
-status=2
-Notes:
-Status 1 (new/baru) and status 99 (deleted) are excluded from this list.
+GET /api/reportings?per_page=10&search=RPT&machine_id=1&status=1
 
 Get reporting detail
 GET /api/reportings/{reporting}
