@@ -970,7 +970,7 @@ PUT /api/operations/{operation}
 
 Get operation detail
 GET /api/operations/{operation}
-Returned detail includes division_id, division_name, part_id, and part_name arrays.
+Returned detail includes part_id and part_name arrays.
 
 Delete operation
 DELETE /api/operations/{operation}
@@ -1051,14 +1051,14 @@ Reasons Examples
 ----------------
 List reason_active
 GET /api/reason_active?per_page=10&search=alasan&division_id=1
-Returns total_division and total_part for each reason.
+Returns part_id, part_name, total_division, and total_part for each reason.
 
 Toggle reason status 99 <-> 1
 PUT /api/reason_setstatus/{reason}
 
 List reasons
 GET /api/reasons?per_page=10&search=alasan&division_id=1
-Returns total_division and total_part for each reason.
+Returns part_id, part_name, total_division, and total_part for each reason.
 
 Create reason
 POST /api/reasons
@@ -1083,7 +1083,7 @@ PUT /api/reasons/{reason}
 
 Get reason detail
 GET /api/reasons/{reason}
-Returned detail includes division_id, division_name, part_id, and part_name arrays.
+Returned detail includes part_id and part_name arrays.
 
 Delete reason
 DELETE /api/reasons/{reason}

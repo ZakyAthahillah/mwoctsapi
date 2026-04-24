@@ -23,7 +23,7 @@ class ReasonController extends Controller
             $divisionId = $request->query('division_id');
 
             $reasonsQuery = Reason::query()
-                ->with(['area', 'division'])
+                ->with(['area', 'parts'])
                 ->withCount(['divisions', 'parts'])
                 ->where('status', '<>', 11)
                 ->when($user?->area_id !== null, fn ($query) => $query->where('area_id', $user->area_id), fn ($query) => $query->whereNull('area_id'))
@@ -66,7 +66,7 @@ class ReasonController extends Controller
             $divisionId = $request->query('division_id');
 
             $reasonsQuery = Reason::query()
-                ->with(['area', 'division'])
+                ->with(['area', 'parts'])
                 ->withCount(['divisions', 'parts'])
                 ->where('status', '<>', 99)
                 ->when($user?->area_id !== null, fn ($query) => $query->where('area_id', $user->area_id), fn ($query) => $query->whereNull('area_id'))
@@ -119,7 +119,7 @@ class ReasonController extends Controller
                 return $reason;
             });
 
-            $reason->load(['area', 'division', 'divisions', 'parts']);
+            $reason->load(['area', 'parts']);
 
             return ApiResponseHelper::success('Reason created successfully', ReasonDataHelper::transform($reason), null, 201);
         } catch (\Throwable $exception) {
@@ -138,7 +138,7 @@ class ReasonController extends Controller
                 return ApiResponseHelper::error('Resource not found', null, 404);
             }
 
-            $reason->load(['area', 'division', 'divisions', 'parts']);
+            $reason->load(['area', 'parts']);
 
             return ApiResponseHelper::success('Data retrieved successfully', ReasonDataHelper::transform($reason));
         } catch (\Throwable $exception) {
@@ -191,7 +191,7 @@ class ReasonController extends Controller
                 'status' => 99,
             ]);
 
-            $reason->refresh()->load(['area', 'division']);
+            $reason->refresh()->load(['area', 'parts']);
 
             return ApiResponseHelper::success('Reason deleted successfully', ReasonDataHelper::transform($reason));
         } catch (\Throwable $exception) {
@@ -212,7 +212,7 @@ class ReasonController extends Controller
                 'status' => (int) $reason->status === 99 ? 1 : 99,
             ]);
 
-            $reason->refresh()->load(['area', 'division']);
+            $reason->refresh()->load(['area', 'parts']);
 
             return ApiResponseHelper::success('Reason status updated successfully', ReasonDataHelper::transform($reason));
         } catch (\Throwable $exception) {

@@ -47,6 +47,8 @@ class ReasonApiTest extends TestCase
         $this->assertTrue(collect($response->json('data'))->contains(fn (array $item) => $item['code'] === 'RSN-REL'
             && $item['total_division'] === 1
             && $item['total_part'] === 1));
+        $response->assertJsonMissingPath('data.0.division_id');
+        $response->assertJsonMissingPath('data.0.division_name');
     }
 
     public function test_authenticated_user_can_list_reason_active_with_status_not_equal_eleven(): void
@@ -118,12 +120,10 @@ class ReasonApiTest extends TestCase
             ->assertJsonPath('success', true)
             ->assertJsonPath('data.code', 'RSN001')
             ->assertJsonPath('data.area_name', 'Area Alasan')
-            ->assertJsonPath('data.division_id.0', (string) $divisionOne->id)
-            ->assertJsonPath('data.division_id.1', (string) $divisionTwo->id)
-            ->assertJsonPath('data.division_name.0', 'Divisi Alasan')
-            ->assertJsonPath('data.division_name.1', 'Divisi Tambahan')
             ->assertJsonPath('data.part_id.0', (string) $part->id)
-            ->assertJsonPath('data.part_name.0', 'HC Blower');
+            ->assertJsonPath('data.part_name.0', 'HC Blower')
+            ->assertJsonMissingPath('data.division_id')
+            ->assertJsonMissingPath('data.division_name');
     }
 
     public function test_authenticated_user_can_create_reason(): void
@@ -158,10 +158,10 @@ class ReasonApiTest extends TestCase
             ->assertJsonPath('success', true)
             ->assertJsonPath('message', 'Reason created successfully')
             ->assertJsonPath('data.code', 'RSN001')
-            ->assertJsonPath('data.division_id.0', (string) $divisionOne->id)
-            ->assertJsonPath('data.division_id.1', (string) $divisionTwo->id)
             ->assertJsonPath('data.part_id.0', (string) $partOne->id)
-            ->assertJsonPath('data.part_id.1', (string) $partTwo->id);
+            ->assertJsonPath('data.part_id.1', (string) $partTwo->id)
+            ->assertJsonMissingPath('data.division_id')
+            ->assertJsonMissingPath('data.division_name');
 
         $this->assertDatabaseHas('reasons', [
             'code' => 'RSN001',
@@ -248,10 +248,10 @@ class ReasonApiTest extends TestCase
             ->assertJsonPath('success', true)
             ->assertJsonPath('message', 'Reason updated successfully')
             ->assertJsonPath('data.code', 'RSN002')
-            ->assertJsonPath('data.division_name.0', 'Divisi A')
-            ->assertJsonPath('data.division_name.1', 'Divisi B')
             ->assertJsonPath('data.part_name.0', 'Pump')
-            ->assertJsonPath('data.part_name.1', 'Valve');
+            ->assertJsonPath('data.part_name.1', 'Valve')
+            ->assertJsonMissingPath('data.division_id')
+            ->assertJsonMissingPath('data.division_name');
 
         $this->assertDatabaseMissing('division_reason', [
             'reason_id' => $reason->id,

@@ -23,7 +23,7 @@ Reason API routes are defined in `routes/api.php`.
 ### GET `/api/reasons`
 
 Get paginated reason data.
-Each item also includes `total_division` and `total_part`.
+Each item also includes `part_id`, `part_name`, `total_division`, and `total_part`.
 
 Query parameters:
 
@@ -35,7 +35,7 @@ Query parameters:
 ### GET `/api/reason_active`
 
 Get paginated reason data where `status != 11`.
-Each item also includes `total_division` and `total_part`.
+Each item also includes `part_id`, `part_name`, `total_division`, and `total_part`.
 
 Query parameters:
 
@@ -48,12 +48,10 @@ Query parameters:
 
 Get a single reason detail.
 
-Detail responses include assigned divisions and parts/equipment:
+Detail responses include assigned parts/equipment:
 
 ```json
 {
-  "division_id": ["1", "2"],
-  "division_name": ["Mechanical", "Electrical"],
   "part_id": ["1", "2"],
   "part_name": ["HC BLOWER", "HC EXCHANGER"]
 }
@@ -108,7 +106,7 @@ Toggle reason status between `99` and `1`.
 - `GET /api/reason_active` excludes records with `status = 11`.
 - `PUT /api/reason_setstatus/{id}` only supports current status `1` and `99`.
 - `GET` dan `POST` menggunakan `area_id` dari user login.
-- `GET /api/reasons` dan `GET /api/reason_active` menampilkan `total_division` dan `total_part`.
+- `GET /api/reasons` dan `GET /api/reason_active` menampilkan `part_id`, `part_name`, `total_division`, dan `total_part`.
 - `division_id` optional dan bisa berisi satu atau lebih `division.id` aktif dari area reason.
 - `part_id` optional dan bisa berisi satu atau lebih `part.id` aktif dari area reason.
 - Validation is required for create and update requests.
