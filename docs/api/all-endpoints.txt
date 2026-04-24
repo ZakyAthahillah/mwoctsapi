@@ -36,6 +36,11 @@ GET    /api/reporting-reports/statuses
 Jobs
 ----
 GET    /api/jobs
+GET    /api/jobs/new
+GET    /api/jobs/on-progress
+GET    /api/jobs/extend
+GET    /api/jobs/waiting-for-approval
+GET    /api/jobs/finish
 GET    /api/jobs/{job}
 PUT    /api/jobs/{job}/start
 PUT    /api/jobs/{job}/start-extend
@@ -545,6 +550,48 @@ Jobs Examples
 -------------
 List jobs
 GET /api/jobs?per_page=10&status=new&machine_id=1
+
+List new jobs
+GET /api/jobs/new?per_page=10&machine_id=1
+Headers:
+Authorization: Bearer <your_jwt_token>
+Accept: application/json
+Query params:
+per_page=10
+machine_id=1
+
+List on progress jobs
+GET /api/jobs/on-progress?per_page=10&technician_id=1
+Headers:
+Authorization: Bearer <your_jwt_token>
+Accept: application/json
+Query params:
+per_page=10
+technician_id=1
+
+List extended jobs
+GET /api/jobs/extend?per_page=10
+Headers:
+Authorization: Bearer <your_jwt_token>
+Accept: application/json
+Query params:
+per_page=10
+
+List jobs waiting for approval
+GET /api/jobs/waiting-for-approval?per_page=10
+Headers:
+Authorization: Bearer <your_jwt_token>
+Accept: application/json
+Query params:
+per_page=10
+
+List finished jobs
+GET /api/jobs/finish?per_page=10
+Headers:
+Authorization: Bearer <your_jwt_token>
+Accept: application/json
+Query params:
+per_page=10
 
 Get job detail
 GET /api/jobs/10

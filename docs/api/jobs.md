@@ -40,6 +40,40 @@ Query parameters:
 Catatan:
 - area dibatasi otomatis berdasarkan `area_id` user yang login
 
+### GET `/api/jobs/new`
+
+List job dengan status `new`.
+
+Query parameters:
+
+- `per_page` optional
+- `division_id` optional
+- `machine_id` optional
+- `position_id` optional
+- `part_id` optional
+- `operation_id` optional
+- `reason_id` optional
+- `informant_id` optional
+- `reporting_type` optional
+- `technician_id` optional
+- `search` optional
+
+### GET `/api/jobs/on-progress`
+
+List job dengan status `on_progress`.
+
+### GET `/api/jobs/extend`
+
+List job dengan status `extend`.
+
+### GET `/api/jobs/waiting-for-approval`
+
+List job dengan status `waiting_for_approval`.
+
+### GET `/api/jobs/finish`
+
+List job dengan status `finish`.
+
 ### GET `/api/jobs/{job}`
 
 Ambil detail satu job.

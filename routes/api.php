@@ -59,6 +59,11 @@ Route::middleware('auth:api')->group(function () {
 
     // Job routes
     Route::get('/jobs', [JobController::class, 'index']);
+    Route::get('/jobs/new', [JobController::class, 'newJobs']);
+    Route::get('/jobs/on-progress', [JobController::class, 'onProgress']);
+    Route::get('/jobs/extend', [JobController::class, 'extended']);
+    Route::get('/jobs/waiting-for-approval', [JobController::class, 'waitingForApproval']);
+    Route::get('/jobs/finish', [JobController::class, 'finished']);
     Route::get('/jobs/{job}', [JobController::class, 'show']);
     Route::put('/jobs/{job}/start', [JobController::class, 'start']);
     Route::put('/jobs/{job}/start-extend', [JobController::class, 'startExtend']);

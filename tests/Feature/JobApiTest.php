@@ -107,6 +107,7 @@ class JobApiTest extends TestCase
                 'reporting_date' => '2026-04-01 08:00:00',
                 'reporting_notes' => 'New job',
                 'reporting_type' => 1,
+                'sort_order' => 1,
                 'status' => 1,
                 'created_at' => now(),
                 'updated_at' => now(),
@@ -127,7 +128,71 @@ class JobApiTest extends TestCase
                 'reporting_date' => '2026-04-02 08:00:00',
                 'reporting_notes' => 'Finished job',
                 'reporting_type' => 1,
+                'sort_order' => 2,
                 'status' => 5,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id' => 3,
+                'area_id' => $area->id,
+                'division_id' => $division->id,
+                'shift_id_reporting' => $shift->id,
+                'machine_id' => $machine->id,
+                'position_id' => $position->id,
+                'part_id' => $part->id,
+                'part_serial_number_id' => $partSerialNumber->id,
+                'operation_id' => $operation->id,
+                'reason_id' => $reason->id,
+                'informant_id' => $informant->id,
+                'reporting_number' => 'JOB-003',
+                'reporting_date' => '2026-04-03 08:00:00',
+                'reporting_notes' => 'On progress job',
+                'reporting_type' => 1,
+                'sort_order' => 3,
+                'status' => 2,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id' => 4,
+                'area_id' => $area->id,
+                'division_id' => $division->id,
+                'shift_id_reporting' => $shift->id,
+                'machine_id' => $machine->id,
+                'position_id' => $position->id,
+                'part_id' => $part->id,
+                'part_serial_number_id' => $partSerialNumber->id,
+                'operation_id' => $operation->id,
+                'reason_id' => $reason->id,
+                'informant_id' => $informant->id,
+                'reporting_number' => 'JOB-004',
+                'reporting_date' => '2026-04-04 08:00:00',
+                'reporting_notes' => 'Extended job',
+                'reporting_type' => 1,
+                'sort_order' => 4,
+                'status' => 3,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id' => 5,
+                'area_id' => $area->id,
+                'division_id' => $division->id,
+                'shift_id_reporting' => $shift->id,
+                'machine_id' => $machine->id,
+                'position_id' => $position->id,
+                'part_id' => $part->id,
+                'part_serial_number_id' => $partSerialNumber->id,
+                'operation_id' => $operation->id,
+                'reason_id' => $reason->id,
+                'informant_id' => $informant->id,
+                'reporting_number' => 'JOB-005',
+                'reporting_date' => '2026-04-05 08:00:00',
+                'reporting_notes' => 'Waiting approval job',
+                'reporting_type' => 1,
+                'sort_order' => 5,
+                'status' => 4,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -149,6 +214,46 @@ class JobApiTest extends TestCase
             ->assertJsonPath('data.0.reporting_number', 'JOB-001')
             ->assertJsonPath('data.0.status_name', 'new')
             ->assertJsonPath('data.0.technician_names.0', $technician->name);
+
+        $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/jobs/new?per_page=10')
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('data.0.reporting_number', 'JOB-001')
+            ->assertJsonPath('data.0.status_name', 'new');
+
+        $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/jobs/on-progress?per_page=10')
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('data.0.reporting_number', 'JOB-003')
+            ->assertJsonPath('data.0.status_name', 'on_progress');
+
+        $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/jobs/extend?per_page=10')
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('data.0.reporting_number', 'JOB-004')
+            ->assertJsonPath('data.0.status_name', 'extend');
+
+        $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/jobs/waiting-for-approval?per_page=10')
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('data.0.reporting_number', 'JOB-005')
+            ->assertJsonPath('data.0.status_name', 'waiting_for_approval');
+
+        $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/jobs/finish?per_page=10')
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('data.0.reporting_number', 'JOB-002')
+            ->assertJsonPath('data.0.status_name', 'finish');
     }
 
     public function test_authenticated_user_can_start_job(): void
@@ -156,6 +261,12 @@ class JobApiTest extends TestCase
         $area = Area::factory()->create();
         $group = Group::factory()->forArea($area)->create();
         $informant = Informant::factory()->forArea($area)->create(['group_id' => $group->id]);
+        $division = Division::factory()->forArea($area)->create();
+        $machine = Machine::factory()->forArea($area)->create();
+        $position = Position::factory()->forArea($area)->create();
+        $part = Part::factory()->forArea($area)->create();
+        $operation = Operation::factory()->forArea($area)->create();
+        $reason = Reason::factory()->forArea($area)->create();
         $shift = Shift::factory()->forArea($area)->create([
             'name' => 'Shift Pagi',
             'time_start' => '08:00',
@@ -167,10 +278,18 @@ class JobApiTest extends TestCase
         DB::table('reportings')->insert([
             'id' => 1,
             'area_id' => $area->id,
+            'division_id' => $division->id,
+            'shift_id_reporting' => $shift->id,
+            'machine_id' => $machine->id,
+            'position_id' => $position->id,
+            'part_id' => $part->id,
+            'operation_id' => $operation->id,
+            'reason_id' => $reason->id,
             'informant_id' => $informant->id,
             'reporting_number' => 'JOB-START',
             'reporting_date' => '2026-04-01 08:00:00',
             'reporting_type' => 1,
+            'sort_order' => 1,
             'status' => 1,
             'created_at' => now(),
             'updated_at' => now(),
@@ -200,6 +319,12 @@ class JobApiTest extends TestCase
         $area = Area::factory()->create();
         $group = Group::factory()->forArea($area)->create();
         $informant = Informant::factory()->forArea($area)->create(['group_id' => $group->id]);
+        $division = Division::factory()->forArea($area)->create();
+        $machine = Machine::factory()->forArea($area)->create();
+        $position = Position::factory()->forArea($area)->create();
+        $part = Part::factory()->forArea($area)->create();
+        $operation = Operation::factory()->forArea($area)->create();
+        $reason = Reason::factory()->forArea($area)->create();
         $shift = Shift::factory()->forArea($area)->create([
             'name' => 'Shift Pagi',
             'time_start' => '08:00',
@@ -211,12 +336,20 @@ class JobApiTest extends TestCase
         DB::table('reportings')->insert([
             'id' => 1,
             'area_id' => $area->id,
+            'division_id' => $division->id,
+            'shift_id_reporting' => $shift->id,
+            'machine_id' => $machine->id,
+            'position_id' => $position->id,
+            'part_id' => $part->id,
+            'operation_id' => $operation->id,
+            'reason_id' => $reason->id,
             'informant_id' => $informant->id,
             'reporting_number' => 'JOB-EXTEND',
             'reporting_date' => '2026-04-01 08:00:00',
             'processing_date_start' => '2026-04-01 09:00:00',
             'processing_date_finish' => '2026-04-01 10:00:00',
             'reporting_type' => 1,
+            'sort_order' => 1,
             'status' => 3,
             'created_at' => now(),
             'updated_at' => now(),
@@ -257,6 +390,12 @@ class JobApiTest extends TestCase
         $group = Group::factory()->forArea($area)->create();
         $informant = Informant::factory()->forArea($area)->create(['group_id' => $group->id]);
         $approver = Informant::factory()->forArea($area)->create();
+        $division = Division::factory()->forArea($area)->create();
+        $machine = Machine::factory()->forArea($area)->create();
+        $position = Position::factory()->forArea($area)->create();
+        $part = Part::factory()->forArea($area)->create();
+        $operation = Operation::factory()->forArea($area)->create();
+        $reason = Reason::factory()->forArea($area)->create();
         $shift = Shift::factory()->forArea($area)->create([
             'name' => 'Shift Pagi',
             'time_start' => '08:00',
@@ -267,6 +406,13 @@ class JobApiTest extends TestCase
         DB::table('reportings')->insert([
             'id' => 1,
             'area_id' => $area->id,
+            'division_id' => $division->id,
+            'shift_id_reporting' => $shift->id,
+            'machine_id' => $machine->id,
+            'position_id' => $position->id,
+            'part_id' => $part->id,
+            'operation_id' => $operation->id,
+            'reason_id' => $reason->id,
             'informant_id' => $informant->id,
             'reporting_number' => 'JOB-APPROVE',
             'reporting_date' => '2026-04-01 08:00:00',
@@ -274,6 +420,7 @@ class JobApiTest extends TestCase
             'processing_date_finish' => '2026-04-01 10:00:00',
             'shift_id_start' => $shift->id,
             'reporting_type' => 1,
+            'sort_order' => 1,
             'status' => 2,
             'created_at' => now(),
             'updated_at' => now(),

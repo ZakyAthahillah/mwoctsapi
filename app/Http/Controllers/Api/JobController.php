@@ -130,6 +130,41 @@ class JobController extends Controller
         }
     }
 
+    public function newJobs(JobIndexRequest $request)
+    {
+        $request->merge(['status' => 'new']);
+
+        return $this->index($request);
+    }
+
+    public function onProgress(JobIndexRequest $request)
+    {
+        $request->merge(['status' => 'on_progress']);
+
+        return $this->index($request);
+    }
+
+    public function extended(JobIndexRequest $request)
+    {
+        $request->merge(['status' => 'extend']);
+
+        return $this->index($request);
+    }
+
+    public function waitingForApproval(JobIndexRequest $request)
+    {
+        $request->merge(['status' => 'waiting_for_approval']);
+
+        return $this->index($request);
+    }
+
+    public function finished(JobIndexRequest $request)
+    {
+        $request->merge(['status' => 'finish']);
+
+        return $this->index($request);
+    }
+
     public function show(int $job)
     {
         try {
