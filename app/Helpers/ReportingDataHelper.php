@@ -11,7 +11,6 @@ class ReportingDataHelper
             'area_id' => $row->area_id !== null ? (string) $row->area_id : null,
             'reporting_number' => $row->reporting_number,
             'reporting_type' => $row->reporting_type !== null ? (int) $row->reporting_type : null,
-            'reporting_type_name' => self::reportingTypeLabel($row->reporting_type),
             'status' => (int) $row->status,
             'status_name' => self::statusLabel((int) $row->status),
             'reporting_date' => self::formatDateTime($row->reporting_date),
