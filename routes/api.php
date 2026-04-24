@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\GroupController;
 use App\Http\Controllers\Api\InformantController;
 use App\Http\Controllers\Api\JobController;
 use App\Http\Controllers\Api\MachineController;
+use App\Http\Controllers\Api\MonitorController;
 use App\Http\Controllers\Api\MtbfController;
 use App\Http\Controllers\Api\MttrController;
 use App\Http\Controllers\Api\OperationController;
@@ -40,6 +41,9 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/profile', [ProfileController::class, 'show']);
     Route::post('/profile', [ProfileController::class, 'update']);
     Route::get('/dashboard', [DashboardController::class, 'index']);
+
+    // Monitor routes
+    Route::get('/monitor', [MonitorController::class, 'index']);
 
     // Downtime routes
     Route::get('/downtimes', [DowntimeController::class, 'index']);
