@@ -1,0 +1,10 @@
+export const BASE_URL = (__ENV.BASE_URL || 'http://127.0.0.1:8000').replace(/\/$/, '');
+export const K6_EMAIL = __ENV.K6_EMAIL || '';
+export const K6_PASSWORD = __ENV.K6_PASSWORD || '';
+export const K6_PER_PAGE = __ENV.K6_PER_PAGE || '10';
+export const K6_PERIOD_START = __ENV.K6_PERIOD_START || '2026-04-01';
+export const K6_PERIOD_END = __ENV.K6_PERIOD_END || '2026-04-30';
+export const K6_LOGIN_P95_MS = __ENV.K6_LOGIN_P95_MS || '1000';
+export const K6_LOGIN_SLEEP_SECONDS = __ENV.K6_LOGIN_SLEEP_SECONDS || '1';
+export const K6_ENDPOINT = __ENV.K6_ENDPOINT || '';
+export const K6_ENDPOINT_P95_MS = __ENV.K6_ENDPOINT_P95_MS || '1000';
